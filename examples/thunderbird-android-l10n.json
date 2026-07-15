@@ -1,0 +1,83 @@
+{
+  "source": {
+    "repository": "thunderbird/thunderbird-android",
+    "branches": [
+      "main",
+      "beta",
+      "release"
+    ],
+    "tmpDir": ".tmp"
+  },
+  "import": {
+    "sourceFilePatterns": [
+      "**/res/values/strings.xml",
+      "**/composeResources/values/strings.xml",
+      "app-metadata/*/en-US/*.txt"
+    ],
+    "translatedFilePatterns": [
+      "**/res/values*/strings.xml",
+      "**/composeResources/values*/strings.xml",
+      "app-metadata/**/*.txt"
+    ],
+    "excludedFilePatterns": [
+      "app-metadata/**/changelogs/**"
+    ],
+    "cleanupRoots": [
+      "app-common/",
+      "app-k9mail/",
+      "app-metadata/",
+      "app-thunderbird/",
+      "components/",
+      "core/",
+      "feature/",
+      "legacy/",
+      "plugins/"
+    ]
+  },
+  "weblate": {
+    "baseUrl": "https://hosted.weblate.org/api/",
+    "projectSlug": "thunderbird",
+    "defaultLinkedComponent": "app-common",
+    "componentRepo": "weblate://thunderbird/thunderbird-android-l10n/app-common",
+    "componentConfigFile": "./l10n-component-config.json",
+    "discovery": {
+      "androidSourceSuffix": "/src/main/res/values/strings.xml",
+      "composeSourceSuffix": "/src/commonMain/composeResources/values/strings.xml",
+      "skippedDirectories": [
+        ".git",
+        ".github",
+        ".gradle",
+        ".idea",
+        ".kotlin",
+        ".memory",
+        ".tmp",
+        "build",
+        "docs",
+        "gradle",
+        "scripts",
+        "l10n-tools",
+        "tm-weblate"
+      ],
+      "excludedPaths": [
+        "app-ui-catalog",
+        "ui-catalog",
+        "openpgp-api",
+        "/test/"
+      ],
+      "resources": [
+        {
+          "type": "android",
+          "fileMaskSuffix": "/src/main/res/values-*/strings.xml",
+          "templateSuffix": "/src/main/res/values/strings.xml",
+          "fileFormat": "aresource"
+        },
+        {
+          "type": "compose",
+          "fileMaskSuffix": "/src/commonMain/composeResources/values-*/strings.xml",
+          "templateSuffix": "/src/commonMain/composeResources/values/strings.xml",
+          "fileFormat": "cmp-resource"
+        }
+      ]
+    }
+  }
+}

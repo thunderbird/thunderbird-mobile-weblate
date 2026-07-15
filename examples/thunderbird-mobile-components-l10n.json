@@ -1,0 +1,56 @@
+{
+  "source": {
+    "repository": "thunderbird/thunderbird-mobile-components",
+    "branches": [
+      "main"
+    ],
+    "tmpDir": ".tmp"
+  },
+  "import": {
+    "sourceFilePatterns": [],
+    "translatedFilePatterns": [],
+    "excludedFilePatterns": [],
+    "cleanupRoots": []
+  },
+  "weblate": {
+    "baseUrl": "https://hosted.weblate.org/api/",
+    "projectSlug": "thunderbird",
+    "defaultLinkedComponent": "CHANGE-ME",
+    "componentRepo": "CHANGE-ME",
+    "componentConfigFile": "./l10n-component-config.json",
+    "discovery": {
+      "androidSourceSuffix": "/src/main/res/values/strings.xml",
+      "composeSourceSuffix": "/src/commonMain/composeResources/values/strings.xml",
+      "skippedDirectories": [
+        ".git",
+        ".github",
+        ".gradle",
+        ".idea",
+        ".kotlin",
+        ".memory",
+        ".tmp",
+        "build",
+        "docs",
+        "gradle",
+        "scripts",
+        "l10n-tools",
+        "tm-weblate"
+      ],
+      "excludedPaths": [],
+      "resources": [
+        {
+          "type": "android",
+          "fileMaskSuffix": "/src/main/res/values-*/strings.xml",
+          "templateSuffix": "/src/main/res/values/strings.xml",
+          "fileFormat": "aresource"
+        },
+        {
+          "type": "compose",
+          "fileMaskSuffix": "/src/commonMain/composeResources/values-*/strings.xml",
+          "templateSuffix": "/src/commonMain/composeResources/values/strings.xml",
+          "fileFormat": "cmp-resource"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+TOOL_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+export L10N_TOOLS_DEFAULT_COMPONENT_CONFIG="$TOOL_ROOT/l10n-weblate/default-component-config.json"
+
+if [ -z "${GRADLE_CMD:-}" ]; then
+  if [ -x "$TOOL_ROOT/gradlew" ]; then
+    GRADLE_CMD="$TOOL_ROOT/gradlew"
+  else
+    GRADLE_CMD="gradle"
+  fi
+fi
+
+"$GRADLE_CMD" --quiet --project-dir "$TOOL_ROOT" ":l10n-weblate:installDist" < /dev/null
+"$TOOL_ROOT/l10n-weblate/build/install/l10n-weblate/bin/l10n-weblate" "$@"
