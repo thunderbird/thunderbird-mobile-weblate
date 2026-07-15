@@ -1,0 +1,23 @@
+{
+  "source": {
+    "repository": "__SOURCE_REPOSITORY__",
+    "branches": __SOURCE_BRANCHES_JSON__
+  },
+  "import": {
+    "sourceFilePatterns": __SOURCE_FILE_PATTERNS_JSON__,
+    "translatedFilePatterns": __TRANSLATED_FILE_PATTERNS_JSON__,
+    "excludedPaths": __EXCLUDED_PATHS_JSON__
+  },
+  "weblate": {
+    "baseUrl": "__WEBLATE_BASE_URL__",
+    "projectSlug": "__WEBLATE_PROJECT_SLUG__",
+    "defaultLinkedComponent": "__WEBLATE_DEFAULT_LINKED_COMPONENT__",
+    "componentRepo": "__WEBLATE_COMPONENT_REPO__",
+    "discovery": {
+      "resources": [
+        "android",
+        "compose"
+      ]
+    }
+  }
+}
