@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.4.0"
 ktor = "3.5.0"
-kotlinxSerialization = "1.9.0"
+kotlinxSerialization = "1.11.0"
 kotlinxIo = "0.9.1"
 xmlutil = "1.0.1"
 logback = "1.5.35"
