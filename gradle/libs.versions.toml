@@ -9,7 +9,7 @@ testBalloon = "1.0.1-K2.4.0"
 mosaic = "0.18.0"
 ktfmt = "0.26.0"
 kover = "0.9.9"
-detekt = "2.0.0-alpha.5"
+detekt = "2.0.0-alpha.6"
 
 [libraries]
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
