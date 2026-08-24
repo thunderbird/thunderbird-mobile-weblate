@@ -40,6 +40,31 @@ Basic examples:
 ./scripts/weblate update --token YOUR_WEBLATE_TOKEN --log-level ALL
 ```
 
+## Native executable
+
+The build configures a native target for the current host. Build its release executable with the matching task:
+
+```bash
+# Apple Silicon macOS
+./gradlew :l10n-weblate:linkReleaseExecutableMacosArm64
+
+# x86-64 Linux
+./gradlew :l10n-weblate:linkReleaseExecutableLinuxX64
+
+# x86-64 Windows
+./gradlew :l10n-weblate:linkReleaseExecutableMingwX64
+```
+
+The artifact is written below `l10n-weblate/build/bin/<target>/releaseExecutable/`. For example, on Apple Silicon:
+
+```bash
+./l10n-weblate/build/bin/macosArm64/releaseExecutable/l10n-weblate.kexe \
+    list --token YOUR_WEBLATE_TOKEN
+```
+
+Run it from the l10n mirror directory containing `l10n-config.json` and `l10n-component-config.json`. Native targets
+are built on their corresponding host; the project does not currently configure cross-compilation.
+
 ## Available options
 
 - `--token`: Weblate API token (required).
