@@ -24,14 +24,6 @@ gradlePlugin {
             id = "tb-kmp-test-conventions"
             implementationClass = "KmpTestConventionsPlugin"
         }
-        register("jvmConventions") {
-            id = "tb-jvm-conventions"
-            implementationClass = "JvmConventionsPlugin"
-        }
-        register("jvmTestConventions") {
-            id = "tb-jvm-test-conventions"
-            implementationClass = "JvmTestConventionsPlugin"
-        }
     }
 }
 
