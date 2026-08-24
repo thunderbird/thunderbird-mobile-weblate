@@ -19,12 +19,25 @@ kotlin {
             implementation(project(":l10n-config"))
             implementation(project(":l10n-terminal"))
             implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.cio)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinx.json)
         }
 
-        jvmMain.dependencies { runtimeOnly(libs.logback.classic) }
+        jvmMain.dependencies {
+            implementation(libs.ktor.client.cio)
+            runtimeOnly(libs.logback.classic)
+        }
+
+        nativeMain.dependencies {
+            val os = System.getProperty("os.name").lowercase()
+            val engine =
+                when {
+                    os.contains("mac") -> libs.ktor.client.darwin
+                    os.contains("windows") -> libs.ktor.client.winhttp
+                    else -> libs.ktor.client.curl
+                }
+            implementation(engine)
+        }
     }
 }
