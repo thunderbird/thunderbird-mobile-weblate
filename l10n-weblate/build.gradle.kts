@@ -5,7 +5,7 @@ plugins {
     id("tb-kmp-test-conventions")
 }
 
-version = "unspecified"
+version = providers.gradleProperty("releaseVersion").getOrElse("unspecified")
 
 kotlin {
     jvm { binaries { executable { mainClass.set("net.thunderbird.cli.l10n.weblate.MainKt") } } }
