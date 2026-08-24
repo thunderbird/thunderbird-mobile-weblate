@@ -52,7 +52,8 @@ class ResourceSourceFileMerger {
                 relativePath = relativePath,
                 branch = presentBranches.first(),
                 type = files.first().type,
-                keys = keysById.values.map { sourceKey -> sourceKey.key }.sortedBy { key -> key.id },
+                keys =
+                    keysById.values.map { sourceKey -> sourceKey.key }.sortedBy { key -> key.id },
             )
 
         return ResourceSourceFileMergeResult(
