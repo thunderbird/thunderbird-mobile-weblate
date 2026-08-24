@@ -120,26 +120,25 @@ private class SetField(
         val missing = expected.filter { it !in actualSet }
         val unexpected = actual.filter { it !in expectedSet }
 
-        val inner =
-            buildString {
-                    if (missing.isNotEmpty()) {
-                        appendLine("missing:")
-                        missing.forEach { appendLine("  - $it") }
-                    }
-                    if (unexpected.isNotEmpty()) {
-                        appendLine("unexpected:")
-                        unexpected.forEach { appendLine("  + $it") }
-                    }
-                }
-                .trimEnd()
+        val inner = buildString {
+            if (missing.isNotEmpty()) {
+                appendLine("missing:")
+                missing.forEach { appendLine("  - $it") }
+            }
+            if (unexpected.isNotEmpty()) {
+                appendLine("unexpected:")
+                unexpected.forEach { appendLine("  + $it") }
+            }
+        }
+            .trimEnd()
 
         return if (inner.isEmpty()) {
             ""
         } else {
             buildString {
-                    appendLine("$indent$name:")
-                    append(indentText(inner, indentLevel + 1))
-                }
+                appendLine("$indent$name:")
+                append(indentText(inner, indentLevel + 1))
+            }
                 .trimEnd()
         }
     }
@@ -180,28 +179,27 @@ private class MultilineField(
         val actualLines = actual.lines()
         val max = maxOf(expectedLines.size, actualLines.size)
 
-        val inner =
-            buildString {
-                    for (i in 0 until max) {
-                        val exp = expectedLines.getOrNull(i)
-                        val act = actualLines.getOrNull(i)
-                        if (exp != act) {
-                            val expText = exp ?: "<missing>"
-                            val actText = act ?: "<missing>"
-                            appendLine("     [${i + 1}] expected: $expText")
-                            appendLine("     [${i + 1}] actual  : $actText")
-                        }
-                    }
+        val inner = buildString {
+            for (i in 0 until max) {
+                val exp = expectedLines.getOrNull(i)
+                val act = actualLines.getOrNull(i)
+                if (exp != act) {
+                    val expText = exp ?: "<missing>"
+                    val actText = act ?: "<missing>"
+                    appendLine("     [${i + 1}] expected: $expText")
+                    appendLine("     [${i + 1}] actual  : $actText")
                 }
-                .trimEnd()
+            }
+        }
+            .trimEnd()
 
         return if (inner.isEmpty()) {
             ""
         } else {
             buildString {
-                    appendLine("$indent$name:")
-                    append(indentText(inner, indentLevel + 1))
-                }
+                appendLine("$indent$name:")
+                append(indentText(inner, indentLevel + 1))
+            }
                 .trimEnd()
         }
     }
