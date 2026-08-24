@@ -155,7 +155,9 @@ class DefaultWeblateClient(
     }
 }
 
-internal expect fun createWeblateHttpClient(logLevel: LogLevel, json: Json): HttpClient
+internal fun createWeblateHttpClient(logLevel: LogLevel, json: Json): HttpClient = HttpClient {
+    installWeblateDefaults(logLevel = logLevel, json = json)
+}
 
 internal fun HttpClientConfig<*>.installWeblateDefaults(logLevel: LogLevel, json: Json) {
     if (logLevel != LogLevel.NONE) {
