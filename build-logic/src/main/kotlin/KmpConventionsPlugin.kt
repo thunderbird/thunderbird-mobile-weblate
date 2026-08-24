@@ -74,11 +74,8 @@ class KmpConventionsPlugin : Plugin<Project> {
 
     private fun KotlinMultiplatformExtension.configureHostNativeTarget() {
         val os = System.getProperty("os.name").lowercase()
-        val arch = System.getProperty("os.arch").lowercase()
-
         when {
-            os.contains("mac") && arch.contains("aarch64") -> macosArm64()
-            os.contains("mac") -> macosX64()
+            os.contains("mac") -> macosArm64()
             os.contains("linux") -> linuxX64()
             os.contains("windows") -> mingwX64()
         }
