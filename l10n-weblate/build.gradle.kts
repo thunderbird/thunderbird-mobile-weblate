@@ -24,5 +24,7 @@ kotlin {
             implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinx.json)
         }
+
+        jvmMain.dependencies { runtimeOnly(libs.logback.classic) }
     }
 }
