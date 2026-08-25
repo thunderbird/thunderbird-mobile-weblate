@@ -40,6 +40,63 @@ Basic examples:
 ./scripts/weblate update --token YOUR_WEBLATE_TOKEN --log-level ALL
 ```
 
+## Native executable
+
+The build configures a native target for the current host. Build its release executable with the matching task:
+
+```bash
+# Apple Silicon macOS
+./gradlew :l10n-weblate:linkReleaseExecutableMacosArm64
+
+# x86-64 Linux
+./gradlew :l10n-weblate:linkReleaseExecutableLinuxX64
+
+# x86-64 Windows
+./gradlew :l10n-weblate:linkReleaseExecutableMingwX64
+```
+
+The artifact is written below `l10n-weblate/build/bin/<target>/releaseExecutable/`. For example, on Apple Silicon:
+
+```bash
+./l10n-weblate/build/bin/macosArm64/releaseExecutable/l10n-weblate.kexe \
+    list --token YOUR_WEBLATE_TOKEN
+```
+
+Run it from the l10n mirror directory containing `l10n-config.json` and `l10n-component-config.json`. Native targets
+are built on their corresponding host; the project does not currently configure cross-compilation.
+
+## Releases
+
+Pushing a tag beginning with `v` runs the
+[`Publish - Release`](../.github/workflows/publish-release.yml) workflow and creates a GitHub Release containing both
+`l10n-weblate` and `l10n-sync` as:
+
+- A platform-independent JVM distribution
+- A Linux x86-64 native executable
+- A macOS Arm64 native executable
+- A Windows x86-64 native executable
+
+For example:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+`Publish - Release` can also be started manually for an existing tag from the GitHub Actions page.
+
+Each release asset has a keyless Sigstore bundle named `<asset>.sigstore.json`. Verify a downloaded asset with
+[Cosign](https://docs.sigstore.dev/cosign/system_config/installation/):
+
+```bash
+cosign verify-blob \
+    --bundle l10n-weblate-v1.0.0-macos-arm64.tar.gz.sigstore.json \
+    --certificate-identity-regexp \
+        'https://github.com/thunderbird/thunderbird-mobile-weblate/.github/workflows/publish-release.yml@refs/.*' \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+    l10n-weblate-v1.0.0-macos-arm64.tar.gz
+```
+
 ## Available options
 
 - `--token`: Weblate API token (required).
