@@ -134,7 +134,7 @@ object XmlResourceParser : ResourceParser {
             EventType.TEXT -> writer.text(reader.text)
             EventType.CDSECT -> writer.cdsect(reader.text)
             EventType.COMMENT -> writer.comment(reader.text)
-            EventType.ENTITY_REF -> writer.entityRef(reader.text)
+            EventType.ENTITY_REF -> writer.text(reader.text)
             EventType.IGNORABLE_WHITESPACE -> writer.ignorableWhitespace(reader.text)
             EventType.PROCESSING_INSTRUCTION ->
                 writer.processingInstruction(reader.piTarget, reader.piData)
