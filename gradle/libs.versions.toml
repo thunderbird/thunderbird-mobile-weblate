@@ -10,8 +10,12 @@ mosaic = "0.18.0"
 ktfmt = "0.27.0"
 kover = "0.9.9"
 detekt = "2.0.0-alpha.6"
+assertk = "0.28.1"
+clikt = "5.1.0"
 
 [libraries]
+assertk = { module = "com.willowtreeapps.assertk:assertk-jvm", version.ref = "assertk" }
+clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-curl = { module = "io.ktor:ktor-client-curl", version.ref = "ktor" }
@@ -32,6 +36,7 @@ testBalloon-core = { module = "de.infix.testBalloon:testBalloon-framework-core",
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 [plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
