@@ -4,7 +4,6 @@ import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import net.thunderbird.cli.l10n.config.Branch
 import net.thunderbird.cli.l10n.config.readText
-import net.thunderbird.cli.l10n.config.relativeTo
 import net.thunderbird.cli.l10n.config.resolve
 import net.thunderbird.cli.l10n.sync.io.input.InputFile
 import net.thunderbird.cli.l10n.sync.io.input.InputFileMapper
@@ -16,7 +15,7 @@ import net.thunderbird.cli.l10n.sync.io.output.OutputFile
 import net.thunderbird.cli.l10n.sync.io.output.OutputFileChecker
 import net.thunderbird.cli.l10n.sync.io.output.OutputFileMapper
 import net.thunderbird.cli.l10n.sync.io.output.OutputFileWriter
-import net.thunderbird.cli.l10n.sync.model.SourceResourceFile
+import net.thunderbird.cli.l10n.sync.model.TranslationResourceFile
 
 interface ExportTask {
     fun readInput(): ExportInput
@@ -34,6 +33,9 @@ class DefaultExportTask(
     private val targetRoot: Path = Path("."),
     private val inputFileMapper: InputFileMapper = InputFileMapper(),
     private val targetBranchValidator: TargetBranchValidator = GitTargetBranchValidator(),
+    private val staleFileCleaner: ExportStaleFileCleaner? = null,
+    private val translationFileFinder: ExportTranslationFileFinder =
+        ExportTranslationFileFinder(l10nRoot),
 ) : ExportTask {
     override fun readInput(): ExportInput {
         require(SystemFileSystem.exists(l10nRoot.resolve(SYNC_MANIFEST_FILE))) {
@@ -68,10 +70,20 @@ class DefaultExportTask(
     override fun writeOutput(mergeResult: ExportMergeResult, applyChanges: Boolean): ExportOutput {
         val changedFiles = OutputFileChecker.checkFiles(targetRoot, mergeResult.files).changedFiles
         if (applyChanges) OutputFileWriter.writeFiles(targetRoot, changedFiles)
+        val staleFiles =
+            staleFileCleaner
+                ?.clean(
+                    targetRoot = targetRoot,
+                    currentFiles = mergeResult.files.mapTo(linkedSetOf()) { it.relativePath },
+                    applyChanges = applyChanges,
+                )
+                .orEmpty()
         return ExportOutput(
-            mergeResult.files.size,
-            changedFiles,
-            if (applyChanges) changedFiles.size else 0,
+            filesConsidered = mergeResult.files.size,
+            changedFiles = changedFiles,
+            filesWritten = if (applyChanges) changedFiles.size else 0,
+            staleFiles = staleFiles,
+            filesDeleted = if (applyChanges) staleFiles.size else 0,
         )
     }
 
@@ -79,12 +91,26 @@ class DefaultExportTask(
         sourcePath: String,
         keys: Set<String>,
         missingFiles: MutableList<String>,
-    ): List<OutputFile> = buildList {
-        exportXmlFile(sourcePath, keys, missingFiles)?.let(::add)
-        translationFilesFor(sourcePath).forEach {
-            exportXmlFile(it, keys, missingFiles)?.let(::add)
+    ): List<OutputFile> {
+        if (!SystemFileSystem.exists(l10nRoot.resolve(sourcePath))) {
+            missingFiles += sourcePath
+            return emptyList()
+        }
+        return translationFileFinder.find(sourcePath).mapNotNull {
+            exportFile(it, keys, missingFiles)
         }
     }
+
+    private fun exportFile(
+        relativePath: String,
+        keys: Set<String>,
+        missingFiles: MutableList<String>,
+    ): OutputFile? =
+        if (relativePath.endsWith(".xml")) {
+            exportXmlFile(relativePath, keys, missingFiles)
+        } else {
+            exportTextFile(relativePath, missingFiles)
+        }
 
     private fun exportXmlFile(
         relativePath: String,
@@ -96,36 +122,35 @@ class DefaultExportTask(
             missingFiles += relativePath
             return null
         }
-        val sourceFile =
+        val resourceFile =
             inputFileMapper.mapFile(
                 InputFile(relativePath, Branch(branch), file.readText()),
                 Branch(branch),
-                source = true,
-            ) as SourceResourceFile
-        return sourceFile.keys
+                source = false,
+            ) as TranslationResourceFile
+        return resourceFile.keys
             .filter { it.id in keys }
-            .takeIf { it.isNotEmpty() }
-            ?.let { OutputFileMapper.mapFile(sourceFile.copy(keys = it)) }
+            .takeIf { it.isNotEmpty() || resourceFile.keys.isEmpty() }
+            ?.let { OutputFileMapper.mapFile(resourceFile.copy(keys = it)) }
     }
 
-    private fun translationFilesFor(sourcePath: String): List<String> =
-        l10nRoot
-            .resolve(sourcePath)
-            .parent
-            ?.parent
-            ?.takeIf { SystemFileSystem.exists(it) }
-            ?.let { directory ->
-                SystemFileSystem.list(directory)
-                    .filter {
-                        SystemFileSystem.metadataOrNull(it)?.isDirectory == true &&
-                            it.name.startsWith("values-")
-                    }
-                    .map { it.resolve("strings.xml") }
-                    .filter { SystemFileSystem.exists(it) }
-                    .map { it.relativeTo(l10nRoot) }
-                    .sorted()
-            }
-            .orEmpty()
+    private fun exportTextFile(
+        relativePath: String,
+        missingFiles: MutableList<String>,
+    ): OutputFile? {
+        val file = l10nRoot.resolve(relativePath)
+        if (!SystemFileSystem.exists(file)) {
+            missingFiles += relativePath
+            return null
+        }
+        return OutputFileMapper.mapFile(
+            inputFileMapper.mapFile(
+                InputFile(relativePath, Branch(branch), file.readText()),
+                Branch(branch),
+                source = false,
+            )
+        )
+    }
 
     private fun requireSafeRelativePath(relativePath: String) {
         val normalizedPath = relativePath.replace('\\', '/')
@@ -152,4 +177,6 @@ data class ExportOutput(
     val filesConsidered: Int,
     val changedFiles: List<OutputFile>,
     val filesWritten: Int,
+    val staleFiles: List<String>,
+    val filesDeleted: Int,
 )

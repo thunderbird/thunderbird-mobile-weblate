@@ -37,6 +37,34 @@ val InputFileMapperTests by
             assertEquals(main, result.branch)
         }
 
+        test("preserves escaped entities and CDATA in XML resources") {
+            val file =
+                InputFile(
+                    relativePath = "feature/example/src/main/res/values/strings.xml",
+                    sourceBranch = main,
+                    content =
+                        """
+                        <resources>
+                            <string name="escaped">&lt;Example &amp; test&gt;</string>
+                            <string name="cdata"><![CDATA[Example & test]]></string>
+                        </resources>
+                        """
+                            .trimIndent(),
+                )
+
+            val result = mapper.mapFile(file = file, branch = main, source = true)
+
+            assertTrue(result is SourceResourceFile)
+            assertEquals(
+                """<string name="escaped">&lt;Example &amp; test&gt;</string>""",
+                result.keys[0].content,
+            )
+            assertEquals(
+                """<string name="cdata"><![CDATA[Example & test]]></string>""",
+                result.keys[1].content,
+            )
+        }
+
         test("maps Compose XML resources") {
             val file =
                 InputFile(
