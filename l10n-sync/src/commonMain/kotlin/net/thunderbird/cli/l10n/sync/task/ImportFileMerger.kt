@@ -75,24 +75,26 @@ class ImportFileMerger(
         val selectedFile = files.first()
         val sources = textFiles.map { TextFileSource(branch = it.branch, content = it.content) }
         val report =
-            if (sources.map { it.content }.distinct().size > 1) {
-                FileInputReport(
-                    path = relativePath,
-                    presentBranches = files.mapTo(linkedSetOf()) { it.branch },
-                    keyResolutions = emptyList(),
-                    conflicts = emptyList(),
-                    textFileConflict =
-                        TextFileConflict(
-                            filePath = relativePath,
-                            selectedBranch = selectedFile.branch,
-                            sources = sources,
-                        ),
-                )
-            } else {
-                null
-            }
+            FileInputReport(
+                path = relativePath,
+                presentBranches = files.mapTo(linkedSetOf()) { it.branch },
+                keyResolutions = emptyList(),
+                conflicts = emptyList(),
+                textFileConflict =
+                    sources
+                        .takeIf { branchSources ->
+                            branchSources.map { it.content }.distinct().size > 1
+                        }
+                        ?.let {
+                            TextFileConflict(
+                                filePath = relativePath,
+                                selectedBranch = selectedFile.branch,
+                                sources = it,
+                            )
+                        },
+            )
 
-        return FileMergeResult(files = listOf(selectedFile), reports = listOfNotNull(report))
+        return FileMergeResult(files = listOf(selectedFile), reports = listOf(report))
     }
 
     private fun String.isSourceResourceFile(): Boolean =

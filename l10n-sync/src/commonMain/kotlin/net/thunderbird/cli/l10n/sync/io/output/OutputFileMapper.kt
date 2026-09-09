@@ -27,7 +27,11 @@ object OutputFileMapper {
 
     private fun renderResource(keys: List<L10nKey>): String = buildString {
         append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
-        append("<resources>\n")
+        if (keys.any { "<xliff:" in it.content }) {
+            append("<resources xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\">\n")
+        } else {
+            append("<resources>\n")
+        }
         keys
             .sortedBy { key -> key.id }
             .forEach { key ->
