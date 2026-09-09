@@ -40,10 +40,25 @@ object OutputFileMapper {
                     append(comment)
                     append(" -->\n")
                 }
-                append("    ")
-                append(key.content.prependIndent("    ").trimStart())
+                append(indentResourceEntry(key.content))
                 append("\n")
             }
         append("</resources>\n")
+    }
+
+    private fun indentResourceEntry(content: String): String {
+        val lines = content.trim().lines()
+        val continuationIndent =
+            lines
+                .drop(1)
+                .filter { it.isNotBlank() }
+                .minOfOrNull { line -> line.indexOfFirst { !it.isWhitespace() } }
+                ?.coerceAtLeast(0) ?: 0
+        return lines
+            .mapIndexed { index, line ->
+                if (index == 0) line.trimStart() else line.drop(continuationIndent)
+            }
+            .joinToString("\n")
+            .prependIndent("    ")
     }
 }
