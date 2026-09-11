@@ -27,3 +27,7 @@ Run it against the closest upstream branch when changing `beta` or `release`:
 
 Use `--allow-typo-fix` only for text corrections that do not change placeholders or plural quantities. Removing a key
 from `main` is valid while the l10n branch manifest retains it for `beta` or `release`.
+
+The check also validates changed Compose Multiplatform resources, including translated locale files. They must not
+contain `xliff` markup, and placeholders must use the indexed `%<number>$s` or `%<number>$d` syntax supported by Compose
+Multiplatform resources.

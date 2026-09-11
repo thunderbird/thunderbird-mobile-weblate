@@ -11,12 +11,23 @@ internal class BranchCompatibilityChecker(
             "One of upstreamRef or downstreamRefs is required"
         }
 
-        val files =
-            gitClient
-                .changedFiles(options.baseRef, options.headRef)
-                .filter(::isLocalizationSourceFile)
+        val changedFiles = gitClient.changedFiles(options.baseRef, options.headRef)
+        val sourceFiles = changedFiles.filter(::isLocalizationSourceFile)
+        val composeResourceFiles =
+            changedFiles.filter(COMPOSE_RESOURCE_FILE_PATTERN::containsMatchIn)
         val failures = buildList {
-            files.forEach { path ->
+            composeResourceFiles.forEach { path ->
+                addAll(
+                    catchInvalidResource {
+                        resourceParser.validateCompose(
+                            content = gitClient.readFile(options.headRef, path),
+                            path = path,
+                            ref = options.headRef,
+                        )
+                    }
+                )
+            }
+            sourceFiles.forEach { path ->
                 options.upstreamRef?.let { upstreamRef ->
                     addAll(
                         checkAgainstUpstream(path, options.baseRef, options.headRef, upstreamRef)
@@ -35,7 +46,8 @@ internal class BranchCompatibilityChecker(
                 }
             }
         }
-        return CompatibilityResult(filesChecked = files.size, failures = failures)
+        val filesChecked = (sourceFiles + composeResourceFiles).distinct().size
+        return CompatibilityResult(filesChecked = filesChecked, failures = failures.distinct())
     }
 
     private fun checkAgainstUpstream(
@@ -182,13 +194,18 @@ internal class BranchCompatibilityChecker(
             (STORE_SOURCE_PREFIXES.any(path::startsWith) && File(path).name in STORE_SOURCE_NAMES)
 
     private companion object {
+        val COMPOSE_RESOURCE_FILE_PATTERN =
+            Regex("""/composeResources/values(?:-[^/]+)?/(?:strings|plurals)\.xml$""")
+        val COMPOSE_RESOURCE_SOURCE_SUFFIXES =
+            listOf(
+                "/composeResources/values/strings.xml",
+                "/composeResources/values/plurals.xml",
+            )
         val RESOURCE_SOURCE_SUFFIXES =
             listOf(
                 "/res/values/strings.xml",
                 "/res/values/plurals.xml",
-                "/composeResources/values/strings.xml",
-                "/composeResources/values/plurals.xml",
-            )
+            ) + COMPOSE_RESOURCE_SOURCE_SUFFIXES
         val STORE_SOURCE_PREFIXES =
             listOf(
                 "app-metadata/com.fsck.k9/en-US/",
