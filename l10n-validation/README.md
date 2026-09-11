@@ -29,5 +29,8 @@ Use `--allow-typo-fix` only for text corrections that do not change placeholders
 from `main` is valid while the l10n branch manifest retains it for `beta` or `release`.
 
 The check also validates changed Compose Multiplatform resources, including translated locale files. They must not
-contain `xliff` markup, and placeholders must use the indexed `%<number>$s` or `%<number>$d` syntax supported by Compose
-Multiplatform resources.
+declare the `xliff` namespace or contain `xliff` markup, and placeholders must use the indexed `%<number>$s` or
+`%<number>$d` syntax supported by Compose
+Multiplatform resources. Plurals must define `other` and may only use the `zero`, `one`, `two`, `few`, `many`, and
+`other` quantities. Translations must only contain translatable source keys and must preserve the source placeholder
+arguments in strings and each plural quantity.
