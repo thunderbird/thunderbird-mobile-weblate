@@ -37,10 +37,13 @@ class ExportCommand(
         terminal.line("Files considered: ${output.filesConsidered}", indent = 1)
         terminal.line("Files changed: ${output.changedFiles.size}", indent = 1)
         output.changedFiles.forEach { terminal.line("- ${it.relativePath}", indent = 2) }
+        terminal.line("Stale files: ${output.staleFiles.size}", indent = 1)
+        output.staleFiles.forEach { terminal.line("- $it", indent = 2) }
 
         terminal.status("Export complete!", style = TerminalStatusStyle.SUCCESS)
         terminal.line("Branch: ${command.branch}", indent = 1)
         terminal.line("Files considered: ${output.filesConsidered}", indent = 1)
         terminal.line("Files written: ${output.filesWritten}", indent = 1)
+        terminal.line("Files deleted: ${output.filesDeleted}", indent = 1)
     }
 }
