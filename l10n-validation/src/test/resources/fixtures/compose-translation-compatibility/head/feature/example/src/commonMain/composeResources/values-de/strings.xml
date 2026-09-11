@@ -3,6 +3,10 @@
     <string name="existing">Hallo, %2$s</string>
     <string name="internal_name">Intern</string>
     <string name="extra">Zusätzlich</string>
+    <string-array name="labels">
+        <item>Konto %1$s</item>
+        <item>Nachrichten für %2$s</item>
+    </string-array>
     <plurals name="messages">
         <item quantity="one">%1$d Nachricht für %2$s</item>
         <item quantity="few">%1$d Nachrichten</item>

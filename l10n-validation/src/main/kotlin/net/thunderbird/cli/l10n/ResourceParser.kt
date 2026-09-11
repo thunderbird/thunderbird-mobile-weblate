@@ -20,6 +20,9 @@ internal class ResourceParser {
                         "Compose Multiplatform resources must not declare the xliff namespace."
                 )
             }
+            document.duplicateResourceKeys.sorted().forEach { key ->
+                add("$path: $key is defined more than once at $ref.")
+            }
             document.entries.forEach { (key, entry) ->
                 if (entry.hasXliffMarkup) {
                     add(
@@ -34,6 +37,12 @@ internal class ResourceParser {
                     )
                 }
                 if (key.startsWith("plurals:")) {
+                    if (entry.hasPluralItemWithoutQuantity) {
+                        add("$path: $key has an item without quantity at $ref.")
+                    }
+                    entry.duplicatePluralQuantities.sorted().forEach { quantity ->
+                        add("$path: $key repeats quantity $quantity at $ref.")
+                    }
                     if ("other" !in entry.pluralQuantities) {
                         add("$path: $key must define quantity other at $ref.")
                     }
@@ -54,7 +63,13 @@ internal class ResourceParser {
         parseDocument(content, path, ref).entries
 
     private fun parseDocument(content: String?, path: String, ref: String): ParsedResourceDocument {
-        if (content == null) return ParsedResourceDocument(emptyMap(), hasXliffNamespace = false)
+        if (content == null) {
+            return ParsedResourceDocument(
+                entries = emptyMap(),
+                hasXliffNamespace = false,
+                duplicateResourceKeys = emptySet(),
+            )
+        }
 
         val root =
             try {
@@ -77,68 +92,44 @@ internal class ResourceParser {
                 invalidResourceFile("$path could not be read at $ref", exception)
             }
 
-        val entries = buildMap {
-            val children = root.childNodes
-            for (index in 0 until children.length) {
-                val child = children.item(index)
-                if (child.nodeType == Node.ELEMENT_NODE) {
-                    val element = child as Element
-                    if (element.hasAttribute("name")) {
-                        val key = "${element.tagName}:${element.getAttribute("name")}"
-                        val text = element.textContent
-                        put(
-                            key,
-                            ResourceEntry(
-                                serialized = serializeElement(element),
-                                placeholders =
-                                    PLACEHOLDER_PATTERN.findAll(text).map { it.value }.toSet(),
-                                pluralQuantities = extractPluralQuantities(element),
-                                placeholdersByQuantity = extractPlaceholdersByQuantity(element),
-                                isTranslatable = element.getAttribute("translatable") != "false",
-                                hasXliffMarkup = containsXliffMarkup(element),
-                                invalidComposePlaceholders =
-                                    extractInvalidComposePlaceholders(text),
-                            ),
-                        )
-                    }
-                }
-            }
-        }
+        val (entries, duplicateResourceKeys) = parseEntries(root)
         return ParsedResourceDocument(
-            entries,
+            entries = entries,
             hasXliffNamespace = containsXliffNamespaceDeclaration(root),
+            duplicateResourceKeys = duplicateResourceKeys,
         )
     }
 
-    private fun serializeElement(element: Element): String = buildString {
-        append('<')
-        append(element.tagName)
-        val attributes = buildList {
-            for (index in 0 until element.attributes.length) {
-                add(element.attributes.item(index))
-            }
-        }
-        for (attribute in attributes.sortedBy { it.nodeName }) {
-            append(' ')
-            append(attribute.nodeName)
-            append("=\"")
-            append(attribute.nodeValue)
-            append('"')
-        }
-        append('>')
-        val children = element.childNodes
+    private fun parseEntries(root: Element): Pair<Map<String, ResourceEntry>, Set<String>> {
+        val entries = linkedMapOf<String, ResourceEntry>()
+        val duplicateResourceKeys = mutableSetOf<String>()
+        val children = root.childNodes
         for (index in 0 until children.length) {
             val child = children.item(index)
-            when (child.nodeType) {
-                Node.ELEMENT_NODE -> append(serializeElement(child as Element))
-
-                Node.TEXT_NODE,
-                Node.CDATA_SECTION_NODE -> append(child.nodeValue)
+            if (child.nodeType == Node.ELEMENT_NODE) {
+                val element = child as Element
+                if (element.hasAttribute("name")) {
+                    val key = "${element.tagName}:${element.getAttribute("name")}"
+                    val text = element.textContent
+                    if (key in entries) duplicateResourceKeys.add(key)
+                    entries[key] =
+                        ResourceEntry(
+                            serialized = serializeElement(element),
+                            placeholders =
+                                PLACEHOLDER_PATTERN.findAll(text).map { it.value }.toSet(),
+                            pluralQuantities = extractPluralQuantities(element),
+                            placeholdersByQuantity = extractPlaceholdersByQuantity(element),
+                            placeholdersByArrayItem = extractPlaceholdersByArrayItem(element),
+                            hasPluralItemWithoutQuantity = hasPluralItemWithoutQuantity(element),
+                            duplicatePluralQuantities = extractDuplicatePluralQuantities(element),
+                            isTranslatable = element.getAttribute("translatable") != "false",
+                            hasXliffMarkup = containsXliffMarkup(element),
+                            invalidComposePlaceholders = extractInvalidComposePlaceholders(text),
+                        )
+                }
             }
         }
-        append("</")
-        append(element.tagName)
-        append('>')
+        return entries to duplicateResourceKeys
     }
 
     private fun containsXliffMarkup(element: Element): Boolean {
@@ -176,38 +167,21 @@ internal class ResourceParser {
     private fun extractPlaceholdersByQuantity(element: Element): Map<String, Set<String>> {
         if (element.tagName != "plurals") return emptyMap()
 
-        return buildMap {
-            val children = element.childNodes
-            for (index in 0 until children.length) {
-                val child = children.item(index)
-                if (child.nodeType == Node.ELEMENT_NODE) {
-                    val item = child as Element
-                    if (item.tagName == "item" && item.hasAttribute("quantity")) {
-                        val placeholders =
-                            PLACEHOLDER_PATTERN.findAll(item.textContent).map { it.value }.toSet()
-                        put(item.getAttribute("quantity"), placeholders)
-                    }
-                }
+        return childItems(element)
+            .filter { it.hasAttribute("quantity") && it.getAttribute("quantity").isNotBlank() }
+            .associate { item ->
+                item.getAttribute("quantity") to extractPlaceholders(item.textContent)
             }
-        }
     }
 
-    private fun extractPluralQuantities(element: Element): Set<String> {
-        if (element.tagName != "plurals") return emptySet()
+    private fun extractPlaceholdersByArrayItem(element: Element): List<Set<String>> {
+        if (element.tagName != "string-array") return emptyList()
 
-        return buildSet {
-            val children = element.childNodes
-            for (index in 0 until children.length) {
-                val child = children.item(index)
-                if (child.nodeType == Node.ELEMENT_NODE) {
-                    val item = child as Element
-                    if (item.tagName == "item" && item.hasAttribute("quantity")) {
-                        add(item.getAttribute("quantity"))
-                    }
-                }
-            }
-        }
+        return childItems(element).map { item -> extractPlaceholders(item.textContent) }
     }
+
+    private fun extractPlaceholders(text: String): Set<String> =
+        PLACEHOLDER_PATTERN.findAll(text).map { it.value }.toSet()
 
     private fun invalidResourceFile(message: String, cause: Exception): Nothing =
         throw InvalidResourceFile("$message: ${cause.message}", cause)
@@ -224,9 +198,77 @@ internal class ResourceParser {
     }
 }
 
+private fun serializeElement(element: Element): String = buildString {
+    append('<')
+    append(element.tagName)
+    val attributes = buildList {
+        for (index in 0 until element.attributes.length) {
+            add(element.attributes.item(index))
+        }
+    }
+    for (attribute in attributes.sortedBy { it.nodeName }) {
+        append(' ')
+        append(attribute.nodeName)
+        append("=\"")
+        append(attribute.nodeValue)
+        append('"')
+    }
+    append('>')
+    val children = element.childNodes
+    for (index in 0 until children.length) {
+        val child = children.item(index)
+        when (child.nodeType) {
+            Node.ELEMENT_NODE -> append(serializeElement(child as Element))
+
+            Node.TEXT_NODE,
+            Node.CDATA_SECTION_NODE -> append(child.nodeValue)
+        }
+    }
+    append("</")
+    append(element.tagName)
+    append('>')
+}
+
+private fun hasPluralItemWithoutQuantity(element: Element): Boolean =
+    element.tagName == "plurals" &&
+        childItems(element).any {
+            !it.hasAttribute("quantity") || it.getAttribute("quantity").isBlank()
+        }
+
+private fun extractDuplicatePluralQuantities(element: Element): Set<String> {
+    if (element.tagName != "plurals") return emptySet()
+
+    val seen = mutableSetOf<String>()
+    return childItems(element)
+        .map { it.getAttribute("quantity") }
+        .filter(String::isNotBlank)
+        .filterNot(seen::add)
+        .toSet()
+}
+
+private fun extractPluralQuantities(element: Element): Set<String> {
+    if (element.tagName != "plurals") return emptySet()
+
+    return childItems(element)
+        .map { it.getAttribute("quantity") }
+        .filter(String::isNotBlank)
+        .toSet()
+}
+
+private fun childItems(element: Element): List<Element> = buildList {
+    val children = element.childNodes
+    for (index in 0 until children.length) {
+        val child = children.item(index)
+        if (child.nodeType == Node.ELEMENT_NODE && child.nodeName == "item") {
+            add(child as Element)
+        }
+    }
+}
+
 private data class ParsedResourceDocument(
     val entries: Map<String, ResourceEntry>,
     val hasXliffNamespace: Boolean,
+    val duplicateResourceKeys: Set<String>,
 )
 
 internal data class ResourceEntry(
@@ -234,6 +276,9 @@ internal data class ResourceEntry(
     val placeholders: Set<String>,
     val pluralQuantities: Set<String>,
     val placeholdersByQuantity: Map<String, Set<String>>,
+    val placeholdersByArrayItem: List<Set<String>>,
+    val hasPluralItemWithoutQuantity: Boolean,
+    val duplicatePluralQuantities: Set<String>,
     val isTranslatable: Boolean,
     val hasXliffMarkup: Boolean,
     val invalidComposePlaceholders: Set<String>,

@@ -12,4 +12,15 @@
         <item quantity="sometimes">Sometimes</item>
         <item quantity="other">Other</item>
     </plurals>
+    <plurals name="missing_quantity">
+        <item>Missing quantity</item>
+        <item quantity="other">Other</item>
+    </plurals>
+    <plurals name="duplicate_quantity">
+        <item quantity="one">One</item>
+        <item quantity="one">Another one</item>
+        <item quantity="other">Other</item>
+    </plurals>
+    <string name="duplicate_key">First</string>
+    <string name="duplicate_key">Second</string>
 </resources>

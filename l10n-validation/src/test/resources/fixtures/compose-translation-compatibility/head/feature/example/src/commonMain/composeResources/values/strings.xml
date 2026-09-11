@@ -2,6 +2,10 @@
 <resources>
     <string name="existing">Hello, %1$s</string>
     <string name="internal_name" translatable="false">Internal</string>
+    <string-array name="labels">
+        <item>Account %1$s</item>
+        <item>%1$d messages for %2$s</item>
+    </string-array>
     <plurals name="messages">
         <item quantity="one">%1$d message for %2$s</item>
         <item quantity="other">%1$d messages for %2$s</item>

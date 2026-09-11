@@ -181,25 +181,25 @@ internal class BranchCompatibilityChecker(
         }
 
     private fun ResourceEntry.isStructurallyCompatibleWith(other: ResourceEntry): Boolean =
-        placeholders == other.placeholders && pluralQuantities == other.pluralQuantities
+        placeholders == other.placeholders &&
+            pluralQuantities == other.pluralQuantities &&
+            placeholdersByQuantity == other.placeholdersByQuantity &&
+            placeholdersByArrayItem == other.placeholdersByArrayItem
 
     private fun isLocalizationSourceFile(path: String): Boolean =
         RESOURCE_SOURCE_SUFFIXES.any(path::endsWith) ||
+            COMPOSE_RESOURCE_SOURCE_FILE_PATTERN.containsMatchIn(path) ||
             (STORE_SOURCE_PREFIXES.any(path::startsWith) && File(path).name in STORE_SOURCE_NAMES)
 
     private companion object {
         val COMPOSE_RESOURCE_FILE_PATTERN =
-            Regex("""/composeResources/values(?:-[^/]+)?/(?:strings|plurals)\.xml$""")
-        val COMPOSE_RESOURCE_SOURCE_SUFFIXES =
-            listOf(
-                "/composeResources/values/strings.xml",
-                "/composeResources/values/plurals.xml",
-            )
+            Regex("""/composeResources/values(?:-[^/]+)?/[^/]+\.xml$""")
+        val COMPOSE_RESOURCE_SOURCE_FILE_PATTERN = Regex("""/composeResources/values/[^/]+\.xml$""")
         val RESOURCE_SOURCE_SUFFIXES =
             listOf(
                 "/res/values/strings.xml",
                 "/res/values/plurals.xml",
-            ) + COMPOSE_RESOURCE_SOURCE_SUFFIXES
+            )
         val STORE_SOURCE_PREFIXES =
             listOf(
                 "app-metadata/com.fsck.k9/en-US/",
