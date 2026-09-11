@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="existing">Existing</string>
+    <string name="valid_placeholders">Hello, %1$s. You have %2$d messages.</string>
+    <string name="literal_percent">Progress: 100%</string>
+</resources>

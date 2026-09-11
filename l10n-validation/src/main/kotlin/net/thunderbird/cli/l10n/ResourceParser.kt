@@ -11,6 +11,24 @@ import org.xml.sax.InputSource
 import org.xml.sax.SAXException
 
 internal class ResourceParser {
+    fun validateCompose(content: String?, path: String, ref: String): List<String> =
+        parse(content, path, ref).flatMap { (key, entry) ->
+            buildList {
+                if (entry.hasXliffMarkup) {
+                    add(
+                        "$path: $key uses unsupported xliff markup at $ref. " +
+                            "Compose Multiplatform resources must use plain indexed placeholders."
+                    )
+                }
+                entry.invalidComposePlaceholders.sorted().forEach { placeholder ->
+                    add(
+                        "$path: $key uses invalid placeholder $placeholder at $ref. " +
+                            "Compose Multiplatform placeholders must use %<number>\$s or %<number>\$d."
+                    )
+                }
+            }
+        }
+
     fun parse(content: String?, path: String, ref: String): Map<String, ResourceEntry> {
         if (content == null) return emptyMap()
 
@@ -20,7 +38,7 @@ internal class ResourceParser {
                     .apply {
                         isCoalescing = true
                         isIgnoringComments = true
-                        isNamespaceAware = false
+                        isNamespaceAware = true
                         setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true)
                         setFeature(DISALLOW_DOCTYPE_FEATURE, true)
                     }
@@ -43,15 +61,17 @@ internal class ResourceParser {
                     val element = child as Element
                     if (element.hasAttribute("name")) {
                         val key = "${element.tagName}:${element.getAttribute("name")}"
+                        val text = element.textContent
                         put(
                             key,
                             ResourceEntry(
                                 serialized = serializeElement(element),
                                 placeholders =
-                                    PLACEHOLDER_PATTERN.findAll(element.textContent)
-                                        .map { it.value }
-                                        .toSet(),
+                                    PLACEHOLDER_PATTERN.findAll(text).map { it.value }.toSet(),
                                 pluralQuantities = extractPluralQuantities(element),
+                                hasXliffMarkup = containsXliffMarkup(element),
+                                invalidComposePlaceholders =
+                                    extractInvalidComposePlaceholders(text),
                             ),
                         )
                     }
@@ -91,6 +111,22 @@ internal class ResourceParser {
         append('>')
     }
 
+    private fun containsXliffMarkup(element: Element): Boolean {
+        val children = element.childNodes
+        return element.namespaceURI == XLIFF_NAMESPACE ||
+            element.tagName.startsWith("xliff:") ||
+            (0 until children.length).any { index ->
+                val child = children.item(index)
+                child.nodeType == Node.ELEMENT_NODE && containsXliffMarkup(child as Element)
+            }
+    }
+
+    private fun extractInvalidComposePlaceholders(text: String): Set<String> =
+        COMPOSE_PLACEHOLDER_CANDIDATE_PATTERN.findAll(text)
+            .map { it.value }
+            .filterNot(COMPOSE_PLACEHOLDER_PATTERN::matches)
+            .toSet()
+
     private fun extractPluralQuantities(element: Element): Set<String> {
         if (element.tagName != "plurals") return emptySet()
 
@@ -113,7 +149,11 @@ internal class ResourceParser {
 
     private companion object {
         const val DISALLOW_DOCTYPE_FEATURE = "http://apache.org/xml/features/disallow-doctype-decl"
+        const val XLIFF_NAMESPACE = "urn:oasis:names:tc:xliff:document:1.2"
         val PLACEHOLDER_PATTERN = Regex("""%(?:\d+\$)?[-#+ 0,(<]*\d*(?:\.\d+)?[a-zA-Z]""")
+        val COMPOSE_PLACEHOLDER_PATTERN = Regex("""%[1-9]\d*\${'$'}[ds]""")
+        val COMPOSE_PLACEHOLDER_CANDIDATE_PATTERN =
+            Regex("""%(?:[A-Za-z]|[0-9${'$'}#+\-.,(<]+[A-Za-z]?)""")
     }
 }
 
@@ -121,6 +161,8 @@ internal data class ResourceEntry(
     val serialized: String,
     val placeholders: Set<String>,
     val pluralQuantities: Set<String>,
+    val hasXliffMarkup: Boolean,
+    val invalidComposePlaceholders: Set<String>,
 )
 
 internal class InvalidResourceFile(message: String, cause: Throwable) :

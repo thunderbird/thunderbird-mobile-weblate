@@ -93,7 +93,42 @@ class BranchCompatibilityCheckerTest {
     }
 
     @Test
-    fun `translated resource changes are ignored`() {
+    fun `compose resources reject xliff and invalid placeholders`() {
+        val result = checkFixture("compose-invalid", downstreamRefs = listOf("downstream"))
+
+        assertThat(result.failures).hasSize(4)
+        assertThat(result.failures.joinToString("\n"))
+            .contains("string:xliff_placeholder uses unsupported xliff markup")
+        assertThat(result.failures.joinToString("\n"))
+            .contains("string:unindexed_placeholder uses invalid placeholder %s")
+        assertThat(result.failures.joinToString("\n"))
+            .contains("string:unsupported_placeholder uses invalid placeholder %1\$f")
+        assertThat(result.failures.joinToString("\n"))
+            .contains("string:malformed_placeholder uses invalid placeholder %1s")
+    }
+
+    @Test
+    fun `translated compose resources reject xliff namespace aliases and invalid placeholders`() {
+        val result =
+            checkFixture("compose-translated-invalid", downstreamRefs = listOf("downstream"))
+
+        assertThat(result.filesChecked).isEqualTo(1)
+        assertThat(result.failures).hasSize(2)
+        assertThat(result.failures.joinToString("\n"))
+            .contains("string:xliff_placeholder uses unsupported xliff markup")
+        assertThat(result.failures.joinToString("\n"))
+            .contains("string:unindexed_placeholder uses invalid placeholder %s")
+    }
+
+    @Test
+    fun `compose resources accept indexed string and decimal placeholders`() {
+        val result = checkFixture("compose-valid", downstreamRefs = listOf("downstream"))
+
+        assertThat(result.failures).isEmpty()
+    }
+
+    @Test
+    fun `translated Android resource changes are ignored`() {
         val result = checkFixture("translation-only", downstreamRefs = listOf("downstream"))
 
         assertThat(result.filesChecked).isEqualTo(0)
