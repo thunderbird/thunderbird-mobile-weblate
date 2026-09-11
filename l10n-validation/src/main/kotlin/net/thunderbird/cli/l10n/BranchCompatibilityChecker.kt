@@ -5,6 +5,8 @@ import java.io.File
 internal class BranchCompatibilityChecker(
     private val gitClient: GitClient,
     private val resourceParser: ResourceParser = ResourceParser(),
+    private val composeResourceChecker: ComposeResourceChecker =
+        ComposeResourceChecker(gitClient, resourceParser),
 ) {
     fun check(options: CompatibilityOptions): CompatibilityResult {
         require(options.upstreamRef != null || options.downstreamRefs.isNotEmpty()) {
@@ -17,15 +19,7 @@ internal class BranchCompatibilityChecker(
             changedFiles.filter(COMPOSE_RESOURCE_FILE_PATTERN::containsMatchIn)
         val failures = buildList {
             composeResourceFiles.forEach { path ->
-                addAll(
-                    catchInvalidResource {
-                        resourceParser.validateCompose(
-                            content = gitClient.readFile(options.headRef, path),
-                            path = path,
-                            ref = options.headRef,
-                        )
-                    }
-                )
+                addAll(catchInvalidResource { composeResourceChecker.check(path, options.headRef) })
             }
             sourceFiles.forEach { path ->
                 options.upstreamRef?.let { upstreamRef ->

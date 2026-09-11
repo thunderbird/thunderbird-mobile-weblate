@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="greeting">Nachrichten: %2$d, Benutzer: %1$s</string>
+    <plurals name="messages">
+        <item quantity="one">Für %2$s: %1$d Nachricht</item>
+        <item quantity="few">Für %2$s: %1$d Nachrichten</item>
+        <item quantity="other">Für %2$s: %1$d Nachrichten</item>
+    </plurals>
+</resources>

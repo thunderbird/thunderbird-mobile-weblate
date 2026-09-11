@@ -5,4 +5,11 @@
     <string name="unindexed_placeholder">Hello, %s</string>
     <string name="unsupported_placeholder">Progress: %1$f</string>
     <string name="malformed_placeholder">Hello, %1s</string>
+    <plurals name="missing_other">
+        <item quantity="one">One item</item>
+    </plurals>
+    <plurals name="invalid_quantity">
+        <item quantity="sometimes">Sometimes</item>
+        <item quantity="other">Other</item>
+    </plurals>
 </resources>

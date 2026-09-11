@@ -96,7 +96,9 @@ class BranchCompatibilityCheckerTest {
     fun `compose resources reject xliff and invalid placeholders`() {
         val result = checkFixture("compose-invalid", downstreamRefs = listOf("downstream"))
 
-        assertThat(result.failures).hasSize(4)
+        assertThat(result.failures).hasSize(7)
+        assertThat(result.failures.joinToString("\n"))
+            .contains("declares unsupported xliff namespace")
         assertThat(result.failures.joinToString("\n"))
             .contains("string:xliff_placeholder uses unsupported xliff markup")
         assertThat(result.failures.joinToString("\n"))
@@ -105,6 +107,10 @@ class BranchCompatibilityCheckerTest {
             .contains("string:unsupported_placeholder uses invalid placeholder %1\$f")
         assertThat(result.failures.joinToString("\n"))
             .contains("string:malformed_placeholder uses invalid placeholder %1s")
+        assertThat(result.failures.joinToString("\n"))
+            .contains("plurals:missing_other must define quantity other")
+        assertThat(result.failures.joinToString("\n"))
+            .contains("plurals:invalid_quantity uses invalid quantity sometimes")
     }
 
     @Test
@@ -113,11 +119,36 @@ class BranchCompatibilityCheckerTest {
             checkFixture("compose-translated-invalid", downstreamRefs = listOf("downstream"))
 
         assertThat(result.filesChecked).isEqualTo(1)
-        assertThat(result.failures).hasSize(2)
+        assertThat(result.failures).hasSize(3)
+        assertThat(result.failures.joinToString("\n"))
+            .contains("declares unsupported xliff namespace")
         assertThat(result.failures.joinToString("\n"))
             .contains("string:xliff_placeholder uses unsupported xliff markup")
         assertThat(result.failures.joinToString("\n"))
             .contains("string:unindexed_placeholder uses invalid placeholder %s")
+    }
+
+    @Test
+    fun `translated compose resources must match source keys and placeholders`() {
+        val result =
+            checkFixture("compose-translation-compatibility", downstreamRefs = listOf("downstream"))
+
+        assertThat(result.failures).hasSize(4)
+        assertThat(result.failures.joinToString("\n")).contains("string:extra has no source entry")
+        assertThat(result.failures.joinToString("\n"))
+            .contains("string:internal_name is not translatable")
+        assertThat(result.failures.joinToString("\n"))
+            .contains("string:existing uses placeholders [%2\$s]")
+        assertThat(result.failures.joinToString("\n"))
+            .contains("plurals:messages quantity few uses placeholders [%1\$d]")
+    }
+
+    @Test
+    fun `translated compose resources allow reordered placeholders and locale plural quantities`() {
+        val result =
+            checkFixture("compose-translation-valid", downstreamRefs = listOf("downstream"))
+
+        assertThat(result.failures).isEmpty()
     }
 
     @Test
