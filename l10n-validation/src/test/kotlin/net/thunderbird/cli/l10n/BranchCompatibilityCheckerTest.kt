@@ -96,7 +96,7 @@ class BranchCompatibilityCheckerTest {
     fun `compose resources reject xliff and invalid placeholders`() {
         val result = checkFixture("compose-invalid", downstreamRefs = listOf("downstream"))
 
-        assertThat(result.failures).hasSize(7)
+        assertThat(result.failures).hasSize(10)
         assertThat(result.failures.joinToString("\n"))
             .contains("declares unsupported xliff namespace")
         assertThat(result.failures.joinToString("\n"))
@@ -111,6 +111,12 @@ class BranchCompatibilityCheckerTest {
             .contains("plurals:missing_other must define quantity other")
         assertThat(result.failures.joinToString("\n"))
             .contains("plurals:invalid_quantity uses invalid quantity sometimes")
+        assertThat(result.failures.joinToString("\n"))
+            .contains("plurals:missing_quantity has an item without quantity")
+        assertThat(result.failures.joinToString("\n"))
+            .contains("plurals:duplicate_quantity repeats quantity one")
+        assertThat(result.failures.joinToString("\n"))
+            .contains("string:duplicate_key is defined more than once")
     }
 
     @Test
@@ -133,7 +139,7 @@ class BranchCompatibilityCheckerTest {
         val result =
             checkFixture("compose-translation-compatibility", downstreamRefs = listOf("downstream"))
 
-        assertThat(result.failures).hasSize(4)
+        assertThat(result.failures).hasSize(5)
         assertThat(result.failures.joinToString("\n")).contains("string:extra has no source entry")
         assertThat(result.failures.joinToString("\n"))
             .contains("string:internal_name is not translatable")
@@ -141,6 +147,8 @@ class BranchCompatibilityCheckerTest {
             .contains("string:existing uses placeholders [%2\$s]")
         assertThat(result.failures.joinToString("\n"))
             .contains("plurals:messages quantity few uses placeholders [%1\$d]")
+        assertThat(result.failures.joinToString("\n"))
+            .contains("string-array:labels item 2 uses placeholders [%2\$s]")
     }
 
     @Test
@@ -149,6 +157,15 @@ class BranchCompatibilityCheckerTest {
             checkFixture("compose-translation-valid", downstreamRefs = listOf("downstream"))
 
         assertThat(result.failures).isEmpty()
+    }
+
+    @Test
+    fun `compose validation includes arbitrarily named XML resource files`() {
+        val result = checkFixture("compose-custom-file", downstreamRefs = listOf("downstream"))
+
+        assertThat(result.filesChecked).isEqualTo(1)
+        assertThat(result.failures.single())
+            .contains("string:invalid_placeholder uses invalid placeholder %s")
     }
 
     @Test

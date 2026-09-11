@@ -40,6 +40,11 @@ internal class ComposeResourceChecker(
                         checkPluralPlaceholders(path, sourcePath, key, translatedEntry, sourceEntry)
                     )
 
+                key.startsWith("string-array:") ->
+                    addAll(
+                        checkArrayPlaceholders(path, sourcePath, key, translatedEntry, sourceEntry)
+                    )
+
                 translatedEntry.placeholders != sourceEntry.placeholders ->
                     add(
                         "$path: translated $key uses placeholders ${translatedEntry.placeholders.render()} " +
@@ -71,11 +76,38 @@ internal class ComposeResourceChecker(
         }
     }
 
+    private fun checkArrayPlaceholders(
+        path: String,
+        sourcePath: String,
+        key: String,
+        translatedEntry: ResourceEntry,
+        sourceEntry: ResourceEntry,
+    ): List<String> = buildList {
+        val translatedItems = translatedEntry.placeholdersByArrayItem
+        val sourceItems = sourceEntry.placeholdersByArrayItem
+        if (translatedItems.size != sourceItems.size) {
+            add(
+                "$path: translated $key has ${translatedItems.size} items instead of " +
+                    "${sourceItems.size} from $sourcePath."
+            )
+        }
+        translatedItems.zip(sourceItems).forEachIndexed {
+            index,
+            (translatedPlaceholders, sourcePlaceholders) ->
+            if (translatedPlaceholders != sourcePlaceholders) {
+                add(
+                    "$path: translated $key item ${index + 1} uses placeholders ${translatedPlaceholders.render()} " +
+                        "instead of ${sourcePlaceholders.render()} from $sourcePath."
+                )
+            }
+        }
+    }
+
     private fun Set<String>.render(): String = sorted().joinToString(prefix = "[", postfix = "]")
 
     private companion object {
         val COMPOSE_TRANSLATED_RESOURCE_FILE_PATTERN =
-            Regex("""/composeResources/values-[^/]+/(?:strings|plurals)\.xml$""")
+            Regex("""/composeResources/values-[^/]+/[^/]+\.xml$""")
         val COMPOSE_TRANSLATED_VALUES_PATTERN = Regex("""/composeResources/values-[^/]+/""")
     }
 }

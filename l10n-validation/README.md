@@ -31,6 +31,8 @@ from `main` is valid while the l10n branch manifest retains it for `beta` or `re
 The check also validates changed Compose Multiplatform resources, including translated locale files. They must not
 declare the `xliff` namespace or contain `xliff` markup, and placeholders must use the indexed `%<number>$s` or
 `%<number>$d` syntax supported by Compose
-Multiplatform resources. Plurals must define `other` and may only use the `zero`, `one`, `two`, `few`, `many`, and
-`other` quantities. Translations must only contain translatable source keys and must preserve the source placeholder
-arguments in strings and each plural quantity.
+Multiplatform resources. Plural items must define a unique `zero`, `one`, `two`, `few`, `many`, or `other` quantity,
+and every plural must define `other`. Resource keys must be unique within each file. Translations must only contain
+translatable source keys and must preserve
+source placeholders in strings, each plural quantity, and each string-array item. Validation applies to every XML file
+in a Compose `values` directory, regardless of its file name.
