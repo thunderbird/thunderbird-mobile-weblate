@@ -40,9 +40,9 @@ internal class L10nValidationCli {
         val unexpected = options.names - COMMON_OPTIONS
         if (unexpected.isNotEmpty()) return unknownOptions(unexpected)
 
-        val result = ComposeResourceChangeChecker(gitClient).check(baseRef, headRef)
+        val result = ResourceChangeChecker(gitClient).check(baseRef, headRef)
         return result.toCliResult(
-            "Validated ${result.filesChecked} changed Compose resource files."
+            "Validated ${result.filesChecked} changed Android and Compose resource files."
         )
     }
 
@@ -115,7 +115,7 @@ internal class L10nValidationCli {
             Thunderbird Mobile localization validation
 
             Commands:
-              validate-resource-changes    Validate changed Compose source and translation resources.
+              validate-resource-changes    Validate changed Android and Compose resources.
               check-branch-compatibility   Validate localization compatibility across release branches.
 
             Common options:

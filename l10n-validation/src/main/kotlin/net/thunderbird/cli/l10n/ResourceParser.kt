@@ -62,7 +62,11 @@ internal class ResourceParser {
     fun parse(content: String?, path: String, ref: String): Map<String, ResourceEntry> =
         parseDocument(content, path, ref).entries
 
-    private fun parseDocument(content: String?, path: String, ref: String): ParsedResourceDocument {
+    internal fun parseDocument(
+        content: String?,
+        path: String,
+        ref: String,
+    ): ParsedResourceDocument {
         if (content == null) {
             return ParsedResourceDocument(
                 entries = emptyMap(),
@@ -112,6 +116,8 @@ internal class ResourceParser {
                     val key = "${element.tagName}:${element.getAttribute("name")}"
                     val text = element.textContent
                     if (key in entries) duplicateResourceKeys.add(key)
+                    val isFormatted = element.getAttribute("formatted") != "false"
+                    val isAndroidTextResource = element.tagName in ANDROID_TEXT_RESOURCE_TYPES
                     entries[key] =
                         ResourceEntry(
                             serialized = serializeElement(element),
@@ -120,11 +126,27 @@ internal class ResourceParser {
                             pluralQuantities = extractPluralQuantities(element),
                             placeholdersByQuantity = extractPlaceholdersByQuantity(element),
                             placeholdersByArrayItem = extractPlaceholdersByArrayItem(element),
+                            androidPlaceholders =
+                                extractAndroidPlaceholders(
+                                    text,
+                                    isFormatted && isAndroidTextResource,
+                                ),
+                            androidPlaceholdersByQuantity =
+                                extractAndroidPlaceholdersByQuantity(element),
+                            androidPlaceholdersByArrayItem =
+                                extractAndroidPlaceholdersByArrayItem(element),
                             hasPluralItemWithoutQuantity = hasPluralItemWithoutQuantity(element),
                             duplicatePluralQuantities = extractDuplicatePluralQuantities(element),
                             isTranslatable = element.getAttribute("translatable") != "false",
                             hasXliffMarkup = containsXliffMarkup(element),
+                            hasInvalidAndroidXliffMarkup =
+                                isAndroidTextResource && containsInvalidAndroidXliffMarkup(element),
                             invalidComposePlaceholders = extractInvalidComposePlaceholders(text),
+                            invalidAndroidPlaceholders =
+                                extractInvalidAndroidPlaceholders(
+                                    text,
+                                    isFormatted && isAndroidTextResource,
+                                ),
                         )
                 }
             }
@@ -265,7 +287,50 @@ private fun childItems(element: Element): List<Element> = buildList {
     }
 }
 
-private data class ParsedResourceDocument(
+private fun extractAndroidPlaceholdersByQuantity(element: Element): Map<String, Set<String>> {
+    if (element.tagName != "plurals") return emptyMap()
+
+    return childItems(element)
+        .filter { it.hasAttribute("quantity") && it.getAttribute("quantity").isNotBlank() }
+        .associate { item ->
+            item.getAttribute("quantity") to extractAndroidPlaceholders(item.textContent, true)
+        }
+}
+
+private fun extractAndroidPlaceholdersByArrayItem(element: Element): List<Set<String>> {
+    if (element.tagName != "string-array") return emptyList()
+
+    return childItems(element).map { item -> extractAndroidPlaceholders(item.textContent, true) }
+}
+
+private fun containsInvalidAndroidXliffMarkup(element: Element): Boolean {
+    if (
+        element.namespaceURI == ANDROID_XLIFF_NAMESPACE &&
+            (element.localName != "g" || element.getAttribute("id").isBlank())
+    ) {
+        return true
+    }
+
+    val children = element.childNodes
+    return (0 until children.length).any { index ->
+        val child = children.item(index)
+        child.nodeType == Node.ELEMENT_NODE && containsInvalidAndroidXliffMarkup(child as Element)
+    }
+}
+
+private fun extractAndroidPlaceholders(text: String, isFormatted: Boolean): Set<String> =
+    if (isFormatted) AndroidFormatParser.parse(text).placeholders else emptySet()
+
+private fun extractInvalidAndroidPlaceholders(
+    text: String,
+    isFormatted: Boolean,
+): Set<String> =
+    if (isFormatted) AndroidFormatParser.parse(text).invalidPlaceholders else emptySet()
+
+private const val ANDROID_XLIFF_NAMESPACE = "urn:oasis:names:tc:xliff:document:1.2"
+private val ANDROID_TEXT_RESOURCE_TYPES = setOf("string", "plurals", "string-array")
+
+internal data class ParsedResourceDocument(
     val entries: Map<String, ResourceEntry>,
     val hasXliffNamespace: Boolean,
     val duplicateResourceKeys: Set<String>,
@@ -277,11 +342,16 @@ internal data class ResourceEntry(
     val pluralQuantities: Set<String>,
     val placeholdersByQuantity: Map<String, Set<String>>,
     val placeholdersByArrayItem: List<Set<String>>,
+    val androidPlaceholders: Set<String>,
+    val androidPlaceholdersByQuantity: Map<String, Set<String>>,
+    val androidPlaceholdersByArrayItem: List<Set<String>>,
     val hasPluralItemWithoutQuantity: Boolean,
     val duplicatePluralQuantities: Set<String>,
     val isTranslatable: Boolean,
     val hasXliffMarkup: Boolean,
+    val hasInvalidAndroidXliffMarkup: Boolean,
     val invalidComposePlaceholders: Set<String>,
+    val invalidAndroidPlaceholders: Set<String>,
 )
 
 internal class InvalidResourceFile(message: String, cause: Throwable) :

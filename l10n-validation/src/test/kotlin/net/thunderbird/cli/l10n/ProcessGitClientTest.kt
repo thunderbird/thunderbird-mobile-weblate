@@ -40,6 +40,7 @@ class ProcessGitClientTest {
         val testSubject = ProcessGitClient(repository)
 
         assertThat(testSubject.changedFiles(baseRef, headRef)).containsExactly(path)
+        assertThat(testSubject.files(headRef)).containsExactly(path)
         assertThat(testSubject.readFile(baseRef, path))
             .isEqualTo("<resources><string name=\"example\">Base</string></resources>\n")
     }

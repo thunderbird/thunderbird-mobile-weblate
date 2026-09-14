@@ -5,6 +5,8 @@ import java.io.File
 internal interface GitClient {
     fun changedFiles(baseRef: String, headRef: String): List<String>
 
+    fun files(ref: String): List<String>
+
     fun readFile(ref: String, path: String): String?
 }
 
@@ -15,6 +17,12 @@ internal class ProcessGitClient(private val repositoryRoot: File = File(".")) : 
             .lineSequence()
             .filter { it.isNotBlank() }
             .toList()
+
+    override fun files(ref: String): List<String> =
+        runGit("ls-tree", "-r", "--name-only", "-z", ref)
+            .output
+            .split('\u0000')
+            .filter(String::isNotEmpty)
 
     override fun readFile(ref: String, path: String): String? {
         val result = runGit("show", "$ref:$path", requireSuccess = false)

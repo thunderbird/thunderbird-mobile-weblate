@@ -7,6 +7,8 @@ internal class BranchCompatibilityChecker(
     private val resourceParser: ResourceParser = ResourceParser(),
     private val composeResourceChecker: ComposeResourceChecker =
         ComposeResourceChecker(gitClient, resourceParser),
+    private val androidResourceChecker: AndroidResourceChecker =
+        AndroidResourceChecker(gitClient, resourceParser),
 ) {
     fun check(options: CompatibilityOptions): CompatibilityResult {
         require(options.upstreamRef != null || options.downstreamRefs.isNotEmpty()) {
@@ -16,9 +18,13 @@ internal class BranchCompatibilityChecker(
         val changedFiles = gitClient.changedFiles(options.baseRef, options.headRef)
         val sourceFiles = changedFiles.filter(::isLocalizationSourceFile)
         val composeResourceFiles = changedFiles.filter(::isComposeResourceFile)
+        val androidResourceFiles = changedFiles.filter(::isAndroidResourceFile)
         val failures = buildList {
             composeResourceFiles.forEach { path ->
                 addAll(catchInvalidResource { composeResourceChecker.check(path, options.headRef) })
+            }
+            androidResourceFiles.forEach { path ->
+                addAll(catchInvalidResource { androidResourceChecker.check(path, options.headRef) })
             }
             sourceFiles.forEach { path ->
                 options.upstreamRef?.let { upstreamRef ->
@@ -39,7 +45,8 @@ internal class BranchCompatibilityChecker(
                 }
             }
         }
-        val filesChecked = (sourceFiles + composeResourceFiles).distinct().size
+        val filesChecked =
+            (sourceFiles + composeResourceFiles + androidResourceFiles).distinct().size
         return CompatibilityResult(filesChecked = filesChecked, failures = failures.distinct())
     }
 
@@ -176,7 +183,7 @@ internal class BranchCompatibilityChecker(
         headEntries: Map<String, ResourceEntry>,
     ): Set<String> =
         (baseEntries.keys + headEntries.keys).filterTo(linkedSetOf()) { key ->
-            baseEntries[key] != headEntries[key]
+            isLocalizationResourceKey(key) && baseEntries[key] != headEntries[key]
         }
 
     private fun ResourceEntry.isStructurallyCompatibleWith(other: ResourceEntry): Boolean =
@@ -187,17 +194,12 @@ internal class BranchCompatibilityChecker(
 
     private fun isLocalizationSourceFile(path: String): Boolean =
         !isValidationFixture(path) &&
-            (RESOURCE_SOURCE_SUFFIXES.any(path::endsWith) ||
+            (isAndroidSourceResourceFile(path) ||
                 isComposeSourceResourceFile(path) ||
                 (STORE_SOURCE_PREFIXES.any(path::startsWith) &&
                     File(path).name in STORE_SOURCE_NAMES))
 
     private companion object {
-        val RESOURCE_SOURCE_SUFFIXES =
-            listOf(
-                "/res/values/strings.xml",
-                "/res/values/plurals.xml",
-            )
         val STORE_SOURCE_PREFIXES =
             listOf(
                 "app-metadata/com.fsck.k9/en-US/",
@@ -207,6 +209,11 @@ internal class BranchCompatibilityChecker(
         val STORE_SOURCE_NAMES = setOf("full_description.txt", "short_description.txt", "title.txt")
     }
 }
+
+private fun isLocalizationResourceKey(key: String): Boolean =
+    LOCALIZATION_RESOURCE_KEY_PREFIXES.any(key::startsWith)
+
+private val LOCALIZATION_RESOURCE_KEY_PREFIXES = setOf("string:", "plurals:", "string-array:")
 
 internal fun catchInvalidResource(block: () -> List<String>): List<String> =
     try {

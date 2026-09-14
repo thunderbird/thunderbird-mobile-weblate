@@ -124,3 +124,7 @@ flowchart TD
 The Weblate CLI discovers Android and Compose resource components under the l10n mirror, excluding configured ignored
 modules. It compares the local component set with Weblate and can list, create, update, or delete components. Network
 operations are dry runs by default; `--apply` authorizes the corresponding API mutation.
+
+Discovery currently creates at most one Weblate component per module. For modules with multiple resource source sets,
+the `commonMain` source set represents the module. Supporting multiple source sets is a future improvement and requires
+including the source set in component names and slugs so two resources from the same module cannot collide.
