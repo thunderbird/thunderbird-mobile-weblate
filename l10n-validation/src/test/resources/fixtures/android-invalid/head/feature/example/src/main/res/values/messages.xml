@@ -1,0 +1,28 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="invalid_placeholder">Value %1$q</string>
+    <string name="invalid_flags">Value %1$#d</string>
+    <string name="unsupported_zero_padding">Value %1$02d</string>
+    <string name="invalid_index">Value %999999999999999999999$s</string>
+    <string name="invalid_xliff"><xliff:ph id="value">%1$s</xliff:ph></string>
+    <string name="missing_xliff_id"><xliff:g>%1$s</xliff:g></string>
+    <string name="valid_xliff"><xliff:g id="value">%1$s</xliff:g></string>
+    <string name="literal_percent" formatted="false">100% complete</string>
+    <string name="duplicate_key">First</string>
+    <string name="duplicate_key">Second</string>
+    <plurals name="missing_other">
+        <item quantity="one">One</item>
+    </plurals>
+    <plurals name="invalid_quantity">
+        <item quantity="sometimes">Sometimes</item>
+        <item quantity="other">Other</item>
+    </plurals>
+    <plurals name="missing_quantity">
+        <item>Missing</item>
+        <item quantity="other">Other</item>
+    </plurals>
+    <plurals name="duplicate_quantity">
+        <item quantity="one">One</item>
+        <item quantity="one">Again</item>
+        <item quantity="other">Other</item>
+    </plurals>
+</resources>

@@ -4,7 +4,7 @@ CLI tools and automation for managing Thunderbird Mobile localization workflows 
 
 ## Tools
 
-- `l10n-validation`: validates changed Compose resources and localization compatibility across release branches.
+- `l10n-validation`: validates changed Android and Compose resources and localization compatibility across release branches.
 - `l10n-sync`: syncs localization files between source repository branches and an l10n mirror.
 - `l10n-weblate`: discovers local Android/Compose string components and manages their Weblate component configuration.
 
@@ -19,7 +19,7 @@ The tools work with three distinct locations:
 
 | Location | Purpose                                                                                                                                                                                      | Used by |
 | --- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| --- |
-| Tools checkout | This repository, containing the Gradle project and `scripts/sync` / `scripts/weblate`. It can be a submodule in the l10n mirror.                                                             | Builds and starts the CLIs. |
+| Tools checkout | This repository, containing the Gradle project and wrapper scripts. It can be a submodule in the l10n mirror.                                                                                | Builds and starts the CLIs. |
 | L10n mirror | The local repository holding the merged source resource files and their translations. It owns `l10n-config.json`, receives imports, and is the repository passed as `--l10n-repo` to export. | Import, Weblate, export input. |
 | Source checkout | A checkout of one source branch, such as `release`.                                                                                                                                          | Export output. |
 
@@ -39,7 +39,7 @@ import, stale-file cleanup, and Weblate discovery.
 
 ### Validation
 
-Validate changed Compose resources in any Git repository:
+Validate changed Android and Compose resources in any Git repository:
 
 ```bash
 ./path/to/thunderbird-mobile-weblate/scripts/validation validate-resource-changes \

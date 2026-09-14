@@ -1,6 +1,6 @@
 # Localization validation
 
-Validates changed Compose Multiplatform resources and localization compatibility across release branches.
+Validates changed Android and Compose Multiplatform resources and localization compatibility across release branches.
 
 ## Validate resource changes
 
@@ -11,9 +11,12 @@ l10n-validation validate-resource-changes \
   --head-ref HEAD
 ```
 
-The command validates every changed XML file in a Compose `values` directory. It checks supported indexed placeholders,
-XLIFF exclusion, plural structure, duplicate keys, and source-to-translation compatibility for strings, plurals, and
-string arrays.
+The command validates every changed XML file under Android `src/main/res/values*` and Compose `composeResources/values*`
+directories. Both formats are checked for well-formed XML, plural structure, duplicate keys, and source-to-translation
+compatibility for strings, plurals, and string arrays. Android resources accept Android-compatible formatter placeholders
+without zero-padding and allow `xliff:g` markup. Compose resources require indexed `%<number>$s` or `%<number>$d`
+placeholders and reject XLIFF.
+Missing translations remain valid because runtime source fallback is intentional.
 
 ## Check release-branch compatibility
 
