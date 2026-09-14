@@ -11,11 +11,9 @@ ktfmt = "0.27.0"
 kover = "0.9.9"
 detekt = "2.0.0-alpha.6"
 assertk = "0.28.1"
-clikt = "5.1.0"
 
 [libraries]
 assertk = { module = "com.willowtreeapps.assertk:assertk-jvm", version.ref = "assertk" }
-clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-curl = { module = "io.ktor:ktor-client-curl", version.ref = "ktor" }

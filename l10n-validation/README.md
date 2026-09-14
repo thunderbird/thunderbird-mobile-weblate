@@ -1,38 +1,29 @@
-# Localization CLI
+# Localization validation
 
-This command-line tool validates localization source compatibility across the supported release train:
+Validates changed Compose Multiplatform resources and localization compatibility across release branches.
 
-```text
-main -> beta -> release
-```
-
-## Branch compatibility
-
-Run the check against downstream branches when changing `main`:
+## Validate resource changes
 
 ```bash
-./scripts/validation check-branch-compatibility \
+l10n-validation validate-resource-changes \
+  --repository-root /path/to/repository \
+  --base-ref origin/main \
+  --head-ref HEAD
+```
+
+The command validates every changed XML file in a Compose `values` directory. It checks supported indexed placeholders,
+XLIFF exclusion, plural structure, duplicate keys, and source-to-translation compatibility for strings, plurals, and
+string arrays.
+
+## Check release-branch compatibility
+
+```bash
+l10n-validation check-branch-compatibility \
+  --repository-root /path/to/repository \
   --base-ref origin/main \
   --downstream-ref origin/beta \
   --downstream-ref origin/release
 ```
 
-Run it against the closest upstream branch when changing `beta` or `release`:
-
-```bash
-./scripts/validation check-branch-compatibility \
-  --base-ref origin/beta \
-  --upstream-ref origin/main
-```
-
-Use `--allow-typo-fix` only for text corrections that do not change placeholders or plural quantities. Removing a key
-from `main` is valid while the l10n branch manifest retains it for `beta` or `release`.
-
-The check also validates changed Compose Multiplatform resources, including translated locale files. They must not
-declare the `xliff` namespace or contain `xliff` markup, and placeholders must use the indexed `%<number>$s` or
-`%<number>$d` syntax supported by Compose
-Multiplatform resources. Plural items must define a unique `zero`, `one`, `two`, `few`, `many`, or `other` quantity,
-and every plural must define `other`. Resource keys must be unique within each file. Translations must only contain
-translatable source keys and must preserve
-source placeholders in strings, each plural quantity, and each string-array item. Validation applies to every XML file
-in a Compose `values` directory, regardless of its file name.
+Use `--upstream-ref` instead when validating a release-train branch against its closest upstream branch. Use
+`--allow-typo-fix` only for text corrections that do not change the resource structure.

@@ -15,8 +15,7 @@ internal class BranchCompatibilityChecker(
 
         val changedFiles = gitClient.changedFiles(options.baseRef, options.headRef)
         val sourceFiles = changedFiles.filter(::isLocalizationSourceFile)
-        val composeResourceFiles =
-            changedFiles.filter(COMPOSE_RESOURCE_FILE_PATTERN::containsMatchIn)
+        val composeResourceFiles = changedFiles.filter(::isComposeResourceFile)
         val failures = buildList {
             composeResourceFiles.forEach { path ->
                 addAll(catchInvalidResource { composeResourceChecker.check(path, options.headRef) })
@@ -187,14 +186,13 @@ internal class BranchCompatibilityChecker(
             placeholdersByArrayItem == other.placeholdersByArrayItem
 
     private fun isLocalizationSourceFile(path: String): Boolean =
-        RESOURCE_SOURCE_SUFFIXES.any(path::endsWith) ||
-            COMPOSE_RESOURCE_SOURCE_FILE_PATTERN.containsMatchIn(path) ||
-            (STORE_SOURCE_PREFIXES.any(path::startsWith) && File(path).name in STORE_SOURCE_NAMES)
+        !isValidationFixture(path) &&
+            (RESOURCE_SOURCE_SUFFIXES.any(path::endsWith) ||
+                isComposeSourceResourceFile(path) ||
+                (STORE_SOURCE_PREFIXES.any(path::startsWith) &&
+                    File(path).name in STORE_SOURCE_NAMES))
 
     private companion object {
-        val COMPOSE_RESOURCE_FILE_PATTERN =
-            Regex("""/composeResources/values(?:-[^/]+)?/[^/]+\.xml$""")
-        val COMPOSE_RESOURCE_SOURCE_FILE_PATTERN = Regex("""/composeResources/values/[^/]+\.xml$""")
         val RESOURCE_SOURCE_SUFFIXES =
             listOf(
                 "/res/values/strings.xml",
@@ -210,7 +208,7 @@ internal class BranchCompatibilityChecker(
     }
 }
 
-private fun catchInvalidResource(block: () -> List<String>): List<String> =
+internal fun catchInvalidResource(block: () -> List<String>): List<String> =
     try {
         block()
     } catch (exception: InvalidResourceFile) {
