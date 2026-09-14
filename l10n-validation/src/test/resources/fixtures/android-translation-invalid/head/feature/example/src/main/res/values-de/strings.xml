@@ -1,0 +1,14 @@
+<resources>
+    <string name="extra">Extra</string>
+    <string name="internal_name">Intern</string>
+    <string name="existing">Anzahl %1$d, Name %2$s</string>
+    <string name="invalid_format">Wert %1$q</string>
+    <plurals name="messages">
+        <item quantity="few">%1$s Nachrichten</item>
+        <item quantity="other">%1$d Nachrichten</item>
+    </plurals>
+    <string-array name="labels">
+        <item>Name: %1$s</item>
+        <item>Wert: %1$d</item>
+    </string-array>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="existing">Existing</string>
+    <string name="xliff_placeholder">Hello, %1$s</string>
+    <string name="unindexed_placeholder">Hello, %1$s</string>
+</resources>
