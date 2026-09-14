@@ -5,10 +5,20 @@ import assertk.assertions.contains
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import java.io.File
 import kotlin.test.Test
 
 class BranchCompatibilityCheckerTest {
+    @Test
+    fun `validation fixture resources are excluded from repository checks`() {
+        val path =
+            "cli/l10n-validation/src/test/resources/fixtures/compose-invalid/head/feature/example/" +
+                "src/commonMain/composeResources/values/strings.xml"
+
+        assertThat(isComposeResourceFile(path)).isFalse()
+    }
+
     @Test
     fun `main may remove a key retained downstream`() {
         val result = checkFixture("main-removal", downstreamRefs = listOf("downstream"))

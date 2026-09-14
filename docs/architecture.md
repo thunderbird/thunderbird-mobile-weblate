@@ -1,8 +1,9 @@
 # Architecture overview
 
-The tools have two independent command-line applications that share project configuration and terminal rendering.
-Commands own presentation and delegate work to small task classes. Tasks own the operation flow and use I/O classes for
-Git, files, the sync manifest, and Weblate HTTP calls.
+The tools have three independent command-line applications. The validation CLI operates on Git revisions in any source
+or l10n repository. The sync and Weblate applications share project configuration and terminal rendering. Commands own
+presentation and delegate work to small task classes. Tasks own the operation flow and use I/O classes for Git, files,
+the sync manifest, and Weblate HTTP calls.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"lineColor": "#767676", "textColor": "#767676", "primaryTextColor": "#767676", "secondaryTextColor": "#767676", "tertiaryTextColor": "#767676", "labelTextColor": "#767676", "actorLineColor": "#767676", "actorTextColor": "#767676", "signalColor": "#767676", "signalTextColor": "#767676"}}}%%
@@ -13,6 +14,14 @@ flowchart TB
     Mirror[L10n mirror<br/>merged resources and translations]
     Checkout[Target source checkout]
     Api[Weblate API]
+
+    subgraph Validation[l10n-validation]
+        ValidationCli[Validation command]
+        ResourceCheck[Resource validation]
+        Compatibility[Branch compatibility]
+        ValidationCli --> ResourceCheck
+        ValidationCli --> Compatibility
+    end
 
     subgraph Sync[l10n-sync]
         SyncCli[CLI command]
@@ -28,6 +37,8 @@ flowchart TB
         WeblateCli --> Discovery
     end
 
+    Source -->|Git revisions| ValidationCli
+    Mirror -->|Git revisions| ValidationCli
     Config -->|configures| SyncCli
     Config -->|configures| WeblateCli
     SyncCli -->|renders to| Terminal
