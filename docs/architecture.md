@@ -91,8 +91,10 @@ the import destination and the directory passed to export as `--l10n-repo`; it i
 and the target source checkout.
 
 Export is driven by `l10n-sync-manifest.json`, produced by a prior applied import. The manifest records which source
-keys belong to each branch. Export reads the mirror, selects that branch's keys from source and translation resource
-files, and compares them with the target checkout before writing.
+resource keys and store metadata files belong to each branch. Export reads the mirror, selects translations matching
+that branch's XML keys and metadata files, and compares them with the target checkout without modifying source-language
+files. It also removes
+translated target files that are no longer part of the export, while preserving empty XML resource placeholders.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"lineColor": "#767676", "textColor": "#767676", "primaryTextColor": "#767676", "secondaryTextColor": "#767676", "tertiaryTextColor": "#767676", "labelTextColor": "#767676", "actorLineColor": "#767676", "actorTextColor": "#767676", "signalColor": "#767676", "signalTextColor": "#767676"}}}%%
@@ -103,9 +105,10 @@ flowchart TD
     Validate -- yes --> Select[Select branch file and key inventory]
     Select --> Mirror[Read l10n mirror source and translations]
     Mirror --> Compare[Calculate changed output files]
-    Compare --> Apply{--apply?}
+    Compare --> Cleanup[Find stale translated target files]
+    Cleanup --> Apply{--apply?}
     Apply -- no --> Plan[Report planned changes]
-    Apply -- yes --> Write[Write target checkout]
+    Apply -- yes --> Write[Write and clean target checkout]
 ```
 
 ## Weblate management
