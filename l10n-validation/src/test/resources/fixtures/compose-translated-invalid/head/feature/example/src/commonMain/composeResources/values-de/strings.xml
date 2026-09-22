@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:x="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="existing">Vorhanden</string>
+    <string name="xliff_placeholder">Hallo, <x:g id="name">%1$s</x:g></string>
+    <string name="unindexed_placeholder">Hallo, %s</string>
+</resources>

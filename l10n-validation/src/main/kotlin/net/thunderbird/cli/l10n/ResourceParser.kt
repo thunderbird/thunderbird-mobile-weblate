@@ -1,0 +1,358 @@
+package net.thunderbird.cli.l10n
+
+import java.io.IOException
+import java.io.StringReader
+import javax.xml.XMLConstants
+import javax.xml.parsers.DocumentBuilderFactory
+import javax.xml.parsers.ParserConfigurationException
+import org.w3c.dom.Element
+import org.w3c.dom.Node
+import org.xml.sax.InputSource
+import org.xml.sax.SAXException
+
+internal class ResourceParser {
+    fun validateCompose(content: String?, path: String, ref: String): List<String> {
+        val document = parseDocument(content, path, ref)
+        return buildList {
+            if (document.hasXliffNamespace) {
+                add(
+                    "$path: declares unsupported xliff namespace at $ref. " +
+                        "Compose Multiplatform resources must not declare the xliff namespace."
+                )
+            }
+            document.duplicateResourceKeys.sorted().forEach { key ->
+                add("$path: $key is defined more than once at $ref.")
+            }
+            document.entries.forEach { (key, entry) ->
+                if (entry.hasXliffMarkup) {
+                    add(
+                        "$path: $key uses unsupported xliff markup at $ref. " +
+                            "Compose Multiplatform resources must use plain indexed placeholders."
+                    )
+                }
+                entry.invalidComposePlaceholders.sorted().forEach { placeholder ->
+                    add(
+                        "$path: $key uses invalid placeholder $placeholder at $ref. " +
+                            "Compose Multiplatform placeholders must use %<number>\$s or %<number>\$d."
+                    )
+                }
+                if (key.startsWith("plurals:")) {
+                    if (entry.hasPluralItemWithoutQuantity) {
+                        add("$path: $key has an item without quantity at $ref.")
+                    }
+                    entry.duplicatePluralQuantities.sorted().forEach { quantity ->
+                        add("$path: $key repeats quantity $quantity at $ref.")
+                    }
+                    if ("other" !in entry.pluralQuantities) {
+                        add("$path: $key must define quantity other at $ref.")
+                    }
+                    (entry.pluralQuantities - COMPOSE_PLURAL_QUANTITIES).sorted().forEach { quantity
+                        ->
+                        add(
+                            "$path: $key uses invalid quantity $quantity at $ref. " +
+                                "Compose Multiplatform plural quantities must be one of " +
+                                "${COMPOSE_PLURAL_QUANTITIES.sorted()}."
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun parse(content: String?, path: String, ref: String): Map<String, ResourceEntry> =
+        parseDocument(content, path, ref).entries
+
+    internal fun parseDocument(
+        content: String?,
+        path: String,
+        ref: String,
+    ): ParsedResourceDocument {
+        if (content == null) {
+            return ParsedResourceDocument(
+                entries = emptyMap(),
+                hasXliffNamespace = false,
+                duplicateResourceKeys = emptySet(),
+            )
+        }
+
+        val root =
+            try {
+                DocumentBuilderFactory.newInstance()
+                    .apply {
+                        isCoalescing = true
+                        isIgnoringComments = true
+                        isNamespaceAware = true
+                        setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true)
+                        setFeature(DISALLOW_DOCTYPE_FEATURE, true)
+                    }
+                    .newDocumentBuilder()
+                    .parse(InputSource(StringReader(content)))
+                    .documentElement
+            } catch (exception: ParserConfigurationException) {
+                invalidResourceFile("$path could not be parsed at $ref", exception)
+            } catch (exception: SAXException) {
+                invalidResourceFile("$path is not valid XML at $ref", exception)
+            } catch (exception: IOException) {
+                invalidResourceFile("$path could not be read at $ref", exception)
+            }
+
+        val (entries, duplicateResourceKeys) = parseEntries(root)
+        return ParsedResourceDocument(
+            entries = entries,
+            hasXliffNamespace = containsXliffNamespaceDeclaration(root),
+            duplicateResourceKeys = duplicateResourceKeys,
+        )
+    }
+
+    private fun parseEntries(root: Element): Pair<Map<String, ResourceEntry>, Set<String>> {
+        val entries = linkedMapOf<String, ResourceEntry>()
+        val duplicateResourceKeys = mutableSetOf<String>()
+        val children = root.childNodes
+        for (index in 0 until children.length) {
+            val child = children.item(index)
+            if (child.nodeType == Node.ELEMENT_NODE) {
+                val element = child as Element
+                if (element.hasAttribute("name")) {
+                    val key = "${element.tagName}:${element.getAttribute("name")}"
+                    val text = element.textContent
+                    if (key in entries) duplicateResourceKeys.add(key)
+                    val isFormatted = element.getAttribute("formatted") != "false"
+                    val isAndroidTextResource = element.tagName in ANDROID_TEXT_RESOURCE_TYPES
+                    entries[key] =
+                        ResourceEntry(
+                            serialized = serializeElement(element),
+                            placeholders =
+                                PLACEHOLDER_PATTERN.findAll(text).map { it.value }.toSet(),
+                            pluralQuantities = extractPluralQuantities(element),
+                            placeholdersByQuantity = extractPlaceholdersByQuantity(element),
+                            placeholdersByArrayItem = extractPlaceholdersByArrayItem(element),
+                            androidPlaceholders =
+                                extractAndroidPlaceholders(
+                                    text,
+                                    isFormatted && isAndroidTextResource,
+                                ),
+                            androidPlaceholdersByQuantity =
+                                extractAndroidPlaceholdersByQuantity(element),
+                            androidPlaceholdersByArrayItem =
+                                extractAndroidPlaceholdersByArrayItem(element),
+                            hasPluralItemWithoutQuantity = hasPluralItemWithoutQuantity(element),
+                            duplicatePluralQuantities = extractDuplicatePluralQuantities(element),
+                            isTranslatable = element.getAttribute("translatable") != "false",
+                            hasXliffMarkup = containsXliffMarkup(element),
+                            hasInvalidAndroidXliffMarkup =
+                                isAndroidTextResource && containsInvalidAndroidXliffMarkup(element),
+                            invalidComposePlaceholders = extractInvalidComposePlaceholders(text),
+                            invalidAndroidPlaceholders =
+                                extractInvalidAndroidPlaceholders(
+                                    text,
+                                    isFormatted && isAndroidTextResource,
+                                ),
+                        )
+                }
+            }
+        }
+        return entries to duplicateResourceKeys
+    }
+
+    private fun containsXliffMarkup(element: Element): Boolean {
+        val children = element.childNodes
+        return element.namespaceURI == XLIFF_NAMESPACE ||
+            element.tagName.startsWith("xliff:") ||
+            (0 until children.length).any { index ->
+                val child = children.item(index)
+                child.nodeType == Node.ELEMENT_NODE && containsXliffMarkup(child as Element)
+            }
+    }
+
+    private fun containsXliffNamespaceDeclaration(element: Element): Boolean {
+        val attributes = element.attributes
+        for (index in 0 until attributes.length) {
+            val attribute = attributes.item(index)
+            if (attribute.namespaceURI == XMLNS_NAMESPACE && attribute.nodeValue == XLIFF_NAMESPACE)
+                return true
+        }
+
+        val children = element.childNodes
+        return (0 until children.length).any { index ->
+            val child = children.item(index)
+            child.nodeType == Node.ELEMENT_NODE &&
+                containsXliffNamespaceDeclaration(child as Element)
+        }
+    }
+
+    private fun extractInvalidComposePlaceholders(text: String): Set<String> =
+        COMPOSE_PLACEHOLDER_CANDIDATE_PATTERN.findAll(text)
+            .map { it.value }
+            .filterNot(COMPOSE_PLACEHOLDER_PATTERN::matches)
+            .toSet()
+
+    private fun extractPlaceholdersByQuantity(element: Element): Map<String, Set<String>> {
+        if (element.tagName != "plurals") return emptyMap()
+
+        return childItems(element)
+            .filter { it.hasAttribute("quantity") && it.getAttribute("quantity").isNotBlank() }
+            .associate { item ->
+                item.getAttribute("quantity") to extractPlaceholders(item.textContent)
+            }
+    }
+
+    private fun extractPlaceholdersByArrayItem(element: Element): List<Set<String>> {
+        if (element.tagName != "string-array") return emptyList()
+
+        return childItems(element).map { item -> extractPlaceholders(item.textContent) }
+    }
+
+    private fun extractPlaceholders(text: String): Set<String> =
+        PLACEHOLDER_PATTERN.findAll(text).map { it.value }.toSet()
+
+    private fun invalidResourceFile(message: String, cause: Exception): Nothing =
+        throw InvalidResourceFile("$message: ${cause.message}", cause)
+
+    private companion object {
+        const val DISALLOW_DOCTYPE_FEATURE = "http://apache.org/xml/features/disallow-doctype-decl"
+        const val XLIFF_NAMESPACE = "urn:oasis:names:tc:xliff:document:1.2"
+        const val XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/"
+        val PLACEHOLDER_PATTERN = Regex("""%(?:\d+\$)?[-#+ 0,(<]*\d*(?:\.\d+)?[a-zA-Z]""")
+        val COMPOSE_PLACEHOLDER_PATTERN = Regex("""%[1-9]\d*\${'$'}[ds]""")
+        val COMPOSE_PLACEHOLDER_CANDIDATE_PATTERN =
+            Regex("""%(?:[A-Za-z]|[0-9${'$'}#+\-.,(<]+[A-Za-z]?)""")
+        val COMPOSE_PLURAL_QUANTITIES = setOf("zero", "one", "two", "few", "many", "other")
+    }
+}
+
+private fun serializeElement(element: Element): String = buildString {
+    append('<')
+    append(element.tagName)
+    val attributes = buildList {
+        for (index in 0 until element.attributes.length) {
+            add(element.attributes.item(index))
+        }
+    }
+    for (attribute in attributes.sortedBy { it.nodeName }) {
+        append(' ')
+        append(attribute.nodeName)
+        append("=\"")
+        append(attribute.nodeValue)
+        append('"')
+    }
+    append('>')
+    val children = element.childNodes
+    for (index in 0 until children.length) {
+        val child = children.item(index)
+        when (child.nodeType) {
+            Node.ELEMENT_NODE -> append(serializeElement(child as Element))
+
+            Node.TEXT_NODE,
+            Node.CDATA_SECTION_NODE -> append(child.nodeValue)
+        }
+    }
+    append("</")
+    append(element.tagName)
+    append('>')
+}
+
+private fun hasPluralItemWithoutQuantity(element: Element): Boolean =
+    element.tagName == "plurals" &&
+        childItems(element).any {
+            !it.hasAttribute("quantity") || it.getAttribute("quantity").isBlank()
+        }
+
+private fun extractDuplicatePluralQuantities(element: Element): Set<String> {
+    if (element.tagName != "plurals") return emptySet()
+
+    val seen = mutableSetOf<String>()
+    return childItems(element)
+        .map { it.getAttribute("quantity") }
+        .filter(String::isNotBlank)
+        .filterNot(seen::add)
+        .toSet()
+}
+
+private fun extractPluralQuantities(element: Element): Set<String> {
+    if (element.tagName != "plurals") return emptySet()
+
+    return childItems(element)
+        .map { it.getAttribute("quantity") }
+        .filter(String::isNotBlank)
+        .toSet()
+}
+
+private fun childItems(element: Element): List<Element> = buildList {
+    val children = element.childNodes
+    for (index in 0 until children.length) {
+        val child = children.item(index)
+        if (child.nodeType == Node.ELEMENT_NODE && child.nodeName == "item") {
+            add(child as Element)
+        }
+    }
+}
+
+private fun extractAndroidPlaceholdersByQuantity(element: Element): Map<String, Set<String>> {
+    if (element.tagName != "plurals") return emptyMap()
+
+    return childItems(element)
+        .filter { it.hasAttribute("quantity") && it.getAttribute("quantity").isNotBlank() }
+        .associate { item ->
+            item.getAttribute("quantity") to extractAndroidPlaceholders(item.textContent, true)
+        }
+}
+
+private fun extractAndroidPlaceholdersByArrayItem(element: Element): List<Set<String>> {
+    if (element.tagName != "string-array") return emptyList()
+
+    return childItems(element).map { item -> extractAndroidPlaceholders(item.textContent, true) }
+}
+
+private fun containsInvalidAndroidXliffMarkup(element: Element): Boolean {
+    if (
+        element.namespaceURI == ANDROID_XLIFF_NAMESPACE &&
+            (element.localName != "g" || element.getAttribute("id").isBlank())
+    ) {
+        return true
+    }
+
+    val children = element.childNodes
+    return (0 until children.length).any { index ->
+        val child = children.item(index)
+        child.nodeType == Node.ELEMENT_NODE && containsInvalidAndroidXliffMarkup(child as Element)
+    }
+}
+
+private fun extractAndroidPlaceholders(text: String, isFormatted: Boolean): Set<String> =
+    if (isFormatted) AndroidFormatParser.parse(text).placeholders else emptySet()
+
+private fun extractInvalidAndroidPlaceholders(
+    text: String,
+    isFormatted: Boolean,
+): Set<String> =
+    if (isFormatted) AndroidFormatParser.parse(text).invalidPlaceholders else emptySet()
+
+private const val ANDROID_XLIFF_NAMESPACE = "urn:oasis:names:tc:xliff:document:1.2"
+private val ANDROID_TEXT_RESOURCE_TYPES = setOf("string", "plurals", "string-array")
+
+internal data class ParsedResourceDocument(
+    val entries: Map<String, ResourceEntry>,
+    val hasXliffNamespace: Boolean,
+    val duplicateResourceKeys: Set<String>,
+)
+
+internal data class ResourceEntry(
+    val serialized: String,
+    val placeholders: Set<String>,
+    val pluralQuantities: Set<String>,
+    val placeholdersByQuantity: Map<String, Set<String>>,
+    val placeholdersByArrayItem: List<Set<String>>,
+    val androidPlaceholders: Set<String>,
+    val androidPlaceholdersByQuantity: Map<String, Set<String>>,
+    val androidPlaceholdersByArrayItem: List<Set<String>>,
+    val hasPluralItemWithoutQuantity: Boolean,
+    val duplicatePluralQuantities: Set<String>,
+    val isTranslatable: Boolean,
+    val hasXliffMarkup: Boolean,
+    val hasInvalidAndroidXliffMarkup: Boolean,
+    val invalidComposePlaceholders: Set<String>,
+    val invalidAndroidPlaceholders: Set<String>,
+)
+
+internal class InvalidResourceFile(message: String, cause: Throwable) :
+    IllegalArgumentException(message, cause)

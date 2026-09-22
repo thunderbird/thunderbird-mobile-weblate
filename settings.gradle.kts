@@ -18,6 +18,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "thunderbird-mobile-weblate"
 
+include(":l10n-validation")
 include(":l10n-config")
 include(":l10n-terminal")
 include(":l10n-sync")
