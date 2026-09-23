@@ -13,6 +13,7 @@ import net.thunderbird.cli.l10n.sync.command.ImportCommand
 import net.thunderbird.cli.l10n.sync.io.git.DefaultGitClient
 import net.thunderbird.cli.l10n.sync.task.DefaultExportTask
 import net.thunderbird.cli.l10n.sync.task.DefaultImportTask
+import net.thunderbird.cli.l10n.sync.task.ExportStaleFileCleaner
 import net.thunderbird.cli.l10n.terminal.TerminalLine.Text
 import net.thunderbird.cli.l10n.terminal.TerminalModel
 import net.thunderbird.cli.l10n.terminal.TerminalState
@@ -67,9 +68,16 @@ class SyncTerminalModel(scope: CoroutineScope, args: Array<String>) :
                         ),
                 )
         ) {
+            val l10nRoot = Path(command.l10nRepo)
+            val projectConfig = L10nConfigLoader().load(l10nRoot)
             ExportCommand(
                     command = command,
-                    task = DefaultExportTask(command.branch, Path(command.l10nRepo)),
+                    task =
+                        DefaultExportTask(
+                            branch = command.branch,
+                            l10nRoot = l10nRoot,
+                            staleFileCleaner = ExportStaleFileCleaner(projectConfig),
+                        ),
                     terminal = store,
                 )
                 .run()
