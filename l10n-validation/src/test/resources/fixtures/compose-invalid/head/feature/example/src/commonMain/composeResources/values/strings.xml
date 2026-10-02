@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="existing">Existing</string>
+    <string name="xliff_placeholder">Hello, <xliff:g id="name">%1$s</xliff:g></string>
+    <string name="unindexed_placeholder">Hello, %s</string>
+    <string name="unsupported_placeholder">Progress: %1$f</string>
+    <string name="malformed_placeholder">Hello, %1s</string>
+    <plurals name="missing_other">
+        <item quantity="one">One item</item>
+    </plurals>
+    <plurals name="invalid_quantity">
+        <item quantity="sometimes">Sometimes</item>
+        <item quantity="other">Other</item>
+    </plurals>
+    <plurals name="missing_quantity">
+        <item>Missing quantity</item>
+        <item quantity="other">Other</item>
+    </plurals>
+    <plurals name="duplicate_quantity">
+        <item quantity="one">One</item>
+        <item quantity="one">Another one</item>
+        <item quantity="other">Other</item>
+    </plurals>
+    <string name="duplicate_key">First</string>
+    <string name="duplicate_key">Second</string>
+</resources>

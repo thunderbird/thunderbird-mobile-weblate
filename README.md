@@ -4,6 +4,7 @@ CLI tools and automation for managing Thunderbird Mobile localization workflows 
 
 ## Tools
 
+- `l10n-validation`: validates changed Android and Compose resources and localization compatibility across release branches.
 - `l10n-sync`: syncs localization files between source repository branches and an l10n mirror.
 - `l10n-weblate`: discovers local Android/Compose string components and manages their Weblate component configuration.
 
@@ -18,7 +19,7 @@ The tools work with three distinct locations:
 
 | Location | Purpose                                                                                                                                                                                      | Used by |
 | --- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| --- |
-| Tools checkout | This repository, containing the Gradle project and `scripts/sync` / `scripts/weblate`. It can be a submodule in the l10n mirror.                                                             | Builds and starts the CLIs. |
+| Tools checkout | This repository, containing the Gradle project and wrapper scripts. It can be a submodule in the l10n mirror.                                                                                | Builds and starts the CLIs. |
 | L10n mirror | The local repository holding the merged source resource files and their translations. It owns `l10n-config.json`, receives imports, and is the repository passed as `--l10n-repo` to export. | Import, Weblate, export input. |
 | Source checkout | A checkout of one source branch, such as `release`.                                                                                                                                          | Export output. |
 
@@ -35,6 +36,30 @@ import, Weblate settings, and optional ignored modules. Start with
 
 `ignoredModules` uses module paths such as `components/ui/catalog`. Files beneath an ignored module are excluded from
 import, stale-file cleanup, and Weblate discovery.
+
+### Validation
+
+Validate changed Android and Compose resources in any Git repository:
+
+```bash
+./path/to/thunderbird-mobile-weblate/scripts/validation validate-resource-changes \
+  --repository-root ../source-or-l10n-repository \
+  --base-ref origin/main \
+  --head-ref HEAD
+```
+
+Check source compatibility with downstream release branches:
+
+```bash
+./path/to/thunderbird-mobile-weblate/scripts/validation check-branch-compatibility \
+  --repository-root ../source-repository \
+  --base-ref origin/main \
+  --downstream-ref origin/beta \
+  --downstream-ref origin/release
+```
+
+Release archives contain the JVM CLI and its dependencies. Consumers should pin a release version and verify the
+archive against the accompanying `SHA256SUMS` file.
 
 ### Sync
 
@@ -93,7 +118,7 @@ cd ../l10n-mirror
   --token "$WEBLATE_TOKEN" --slug component-slug --apply
 ```
 
-Use `sync help`, `sync import --help`, `sync export --help`, or `weblate help` for command-line help.
+Use `validation help`, `sync help`, `sync import --help`, `sync export --help`, or `weblate help` for command-line help.
 
 See [the architectural overview](docs/architecture.md) for the command and data flows.
 
@@ -120,5 +145,5 @@ Generate the aggregate Kover XML coverage report:
 Build runnable distributions:
 
 ```bash
-./gradlew :l10n-sync:installDist :l10n-weblate:installDist
+./gradlew :l10n-validation:installDist :l10n-sync:installJvmDist :l10n-weblate:installJvmDist
 ```

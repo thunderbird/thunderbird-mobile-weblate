@@ -1,0 +1,15 @@
+<resources xmlns:x="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="message">Sie haben %2$d Nachrichten, %1$s</string>
+    <string name="date">Datum: %1$td.%1$tm.%1$tY</string>
+    <string name="xliff">Hallo <x:g id="name" example="Jane">%1$s</x:g></string>
+    <string name="percent">Fortschritt: %1$d%%</string>
+    <string name="literal_percent" formatted="false">100% vollständig</string>
+    <plurals name="messages">
+        <item quantity="one">%1$d Nachricht</item>
+        <item quantity="other">%1$d Nachrichten</item>
+    </plurals>
+    <string-array name="labels">
+        <item>Name: %1$s</item>
+        <item>Anzahl: %1$d</item>
+    </string-array>
+</resources>
