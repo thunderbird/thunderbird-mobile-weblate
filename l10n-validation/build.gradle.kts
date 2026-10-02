@@ -13,6 +13,7 @@ kotlin { jvmToolchain(21) }
 application { mainClass.set("net.thunderbird.cli.l10n.MainKt") }
 
 dependencies {
+    implementation(libs.clikt)
     testImplementation(libs.assertk)
     testImplementation(kotlin("test"))
 }
