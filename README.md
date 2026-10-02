@@ -68,8 +68,9 @@ then used by export to select the keys belonging to a branch.
 
 Export requires an existing `l10n-sync-manifest.json` in `--l10n-repo`. Run an applied import first to create or update
 that manifest. The `--branch` value must be present in it, and the current directory must be either that branch or a
-branch created from it. Export writes the branch's recorded source keys and matching translations from the l10n mirror
-into that checkout.
+branch created from it. Export writes XML and store-metadata translations matching the branch's recorded source
+inventory from the l10n mirror into that checkout. It does not modify source-language files. It also removes translated target
+files that are no longer present in the export while preserving empty XML resource placeholders.
 
 ### Weblate
 
