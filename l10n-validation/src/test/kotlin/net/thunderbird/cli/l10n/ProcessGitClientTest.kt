@@ -4,6 +4,8 @@ import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.containsExactly
 import assertk.assertions.isEqualTo
+import com.github.ajalt.clikt.core.ProgramResult
+import com.github.ajalt.clikt.core.parse
 import java.nio.file.Files
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -68,21 +70,32 @@ class ProcessGitClientTest {
         val headRef = runGit("rev-parse", "HEAD").trim()
         val testSubject = L10nValidationCli()
 
-        val result =
-            testSubject.run(
-                listOf(
-                    "validate-resource-changes",
-                    "--repository-root",
-                    repository.absolutePath,
-                    "--base-ref",
-                    baseRef,
-                    "--head-ref",
-                    headRef,
-                )
-            )
+        val output = java.io.ByteArrayOutputStream()
+        val originalError = System.err
+        val failure =
+            try {
+                System.setErr(java.io.PrintStream(output))
+                kotlin
+                    .runCatching {
+                        testSubject.parse(
+                            listOf(
+                                "validate-resource-changes",
+                                "--repository-root",
+                                repository.absolutePath,
+                                "--base-ref",
+                                baseRef,
+                                "--head-ref",
+                                headRef,
+                            )
+                        )
+                    }
+                    .exceptionOrNull()
+            } finally {
+                System.setErr(originalError)
+            }
 
-        assertThat(result.exitCode).isEqualTo(1)
-        assertThat(result.message).contains("uses invalid placeholder %s")
+        assertThat((failure as ProgramResult).statusCode).isEqualTo(1)
+        assertThat(output.toString()).contains("uses invalid placeholder %s")
     }
 
     private fun runGit(vararg arguments: String): String {
