@@ -23,6 +23,7 @@ class ExportTranslationFileFinder(private val l10nRoot: Path) {
             ?.takeIf { SystemFileSystem.exists(it) }
             ?.let { directory ->
                 SystemFileSystem.list(directory)
+                    .asSequence()
                     .filter {
                         SystemFileSystem.metadataOrNull(it)?.isDirectory == true &&
                             it.name.startsWith("values-")
@@ -31,6 +32,7 @@ class ExportTranslationFileFinder(private val l10nRoot: Path) {
                     .filter { SystemFileSystem.exists(it) }
                     .map { it.relativeTo(l10nRoot) }
                     .sorted()
+                    .toList()
             }
             .orEmpty()
 
@@ -38,6 +40,7 @@ class ExportTranslationFileFinder(private val l10nRoot: Path) {
         val sourceFile = l10nRoot.resolve(sourcePath)
         val applicationDirectory = sourceFile.parent?.parent ?: return emptyList()
         return SystemFileSystem.list(applicationDirectory)
+            .asSequence()
             .filter {
                 SystemFileSystem.metadataOrNull(it)?.isDirectory == true && it.name != "en-US"
             }
@@ -45,5 +48,6 @@ class ExportTranslationFileFinder(private val l10nRoot: Path) {
             .filter { SystemFileSystem.exists(it) }
             .map { it.relativeTo(l10nRoot) }
             .sorted()
+            .toList()
     }
 }
