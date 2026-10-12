@@ -5,6 +5,9 @@ import java.io.StringReader
 import javax.xml.XMLConstants
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.parsers.ParserConfigurationException
+import net.thunderbird.cli.l10n.model.InvalidResourceFile
+import net.thunderbird.cli.l10n.model.ParsedResourceDocument
+import net.thunderbird.cli.l10n.model.ResourceEntry
 import org.w3c.dom.Element
 import org.w3c.dom.Node
 import org.xml.sax.InputSource
@@ -213,9 +216,9 @@ internal class ResourceParser {
         const val XLIFF_NAMESPACE = "urn:oasis:names:tc:xliff:document:1.2"
         const val XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/"
         val PLACEHOLDER_PATTERN = Regex("""%(?:\d+\$)?[-#+ 0,(<]*\d*(?:\.\d+)?[a-zA-Z]""")
-        val COMPOSE_PLACEHOLDER_PATTERN = Regex("""%[1-9]\d*\${'$'}[ds]""")
+        val COMPOSE_PLACEHOLDER_PATTERN = Regex("""%[1-9]\d*\$[ds]""")
         val COMPOSE_PLACEHOLDER_CANDIDATE_PATTERN =
-            Regex("""%(?:[A-Za-z]|[0-9${'$'}#+\-.,(<]+[A-Za-z]?)""")
+            Regex("""%(?:[A-Za-z]|[0-9$#+\-.,(<]+[A-Za-z]?)""")
         val COMPOSE_PLURAL_QUANTITIES = setOf("zero", "one", "two", "few", "many", "other")
     }
 }
@@ -329,30 +332,3 @@ private fun extractInvalidAndroidPlaceholders(
 
 private const val ANDROID_XLIFF_NAMESPACE = "urn:oasis:names:tc:xliff:document:1.2"
 private val ANDROID_TEXT_RESOURCE_TYPES = setOf("string", "plurals", "string-array")
-
-internal data class ParsedResourceDocument(
-    val entries: Map<String, ResourceEntry>,
-    val hasXliffNamespace: Boolean,
-    val duplicateResourceKeys: Set<String>,
-)
-
-internal data class ResourceEntry(
-    val serialized: String,
-    val placeholders: Set<String>,
-    val pluralQuantities: Set<String>,
-    val placeholdersByQuantity: Map<String, Set<String>>,
-    val placeholdersByArrayItem: List<Set<String>>,
-    val androidPlaceholders: Set<String>,
-    val androidPlaceholdersByQuantity: Map<String, Set<String>>,
-    val androidPlaceholdersByArrayItem: List<Set<String>>,
-    val hasPluralItemWithoutQuantity: Boolean,
-    val duplicatePluralQuantities: Set<String>,
-    val isTranslatable: Boolean,
-    val hasXliffMarkup: Boolean,
-    val hasInvalidAndroidXliffMarkup: Boolean,
-    val invalidComposePlaceholders: Set<String>,
-    val invalidAndroidPlaceholders: Set<String>,
-)
-
-internal class InvalidResourceFile(message: String, cause: Throwable) :
-    IllegalArgumentException(message, cause)

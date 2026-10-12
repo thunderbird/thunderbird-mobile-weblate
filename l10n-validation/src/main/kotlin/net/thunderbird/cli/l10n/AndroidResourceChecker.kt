@@ -1,5 +1,7 @@
 package net.thunderbird.cli.l10n
 
+import net.thunderbird.cli.l10n.model.ResourceEntry
+
 internal class AndroidResourceChecker(
     private val gitClient: GitClient,
     private val resourceParser: ResourceParser,

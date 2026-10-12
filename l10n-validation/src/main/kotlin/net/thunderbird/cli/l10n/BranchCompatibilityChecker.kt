@@ -1,6 +1,8 @@
 package net.thunderbird.cli.l10n
 
 import java.io.File
+import net.thunderbird.cli.l10n.model.InvalidResourceFile
+import net.thunderbird.cli.l10n.model.ResourceEntry
 
 internal class BranchCompatibilityChecker(
     private val gitClient: GitClient,
