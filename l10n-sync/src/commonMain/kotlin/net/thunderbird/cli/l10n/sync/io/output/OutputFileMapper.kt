@@ -50,15 +50,19 @@ object OutputFileMapper {
         val lines = content.trim().lines()
         val continuationIndent =
             lines
+                .asSequence()
                 .drop(1)
                 .filter { it.isNotBlank() }
                 .minOfOrNull { line -> line.indexOfFirst { !it.isWhitespace() } }
                 ?.coerceAtLeast(0) ?: 0
         return lines
+            .asSequence()
             .mapIndexed { index, line ->
                 if (index == 0) line.trimStart() else line.drop(continuationIndent)
             }
             .joinToString("\n")
-            .prependIndent("    ")
+            .prependIndent(" ".repeat(RESOURCE_ENTRY_INDENT))
     }
+
+    private const val RESOURCE_ENTRY_INDENT = 4
 }
