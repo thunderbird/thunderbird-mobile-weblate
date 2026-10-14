@@ -105,6 +105,7 @@ jobs:
           add-job-summary: false
 
       - name: Build native executables
+        shell: bash
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
