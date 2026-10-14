@@ -6,6 +6,7 @@ import java.util.Formattable
 import java.util.Formatter
 import java.util.IllegalFormatException
 import java.util.Locale
+import net.thunderbird.cli.l10n.model.ResourceEntry
 
 internal fun ResourceParser.validateAndroid(
     content: String?,

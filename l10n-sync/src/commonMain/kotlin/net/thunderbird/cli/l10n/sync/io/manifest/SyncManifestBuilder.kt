@@ -9,9 +9,15 @@ object SyncManifestBuilder {
         val branchFiles = linkedMapOf<String, MutableMap<String, MutableList<String>>>()
 
         reports
-            .filter { report -> report.keyResolutions.isNotEmpty() }
             .sortedBy { report -> report.path }
             .forEach { report ->
+                if (report.keyResolutions.isEmpty() && report.path.isBranchOwnedFile()) {
+                    report.presentBranches.forEach { branch ->
+                        branchFiles
+                            .getOrPut(branch.value) { linkedMapOf() }
+                            .getOrPut(report.path) { mutableListOf() }
+                    }
+                }
                 report.keyResolutions
                     .sortedBy { provenance -> provenance.key }
                     .forEach { provenance ->
@@ -31,4 +37,7 @@ object SyncManifestBuilder {
                 },
         )
     }
+
+    private fun String.isBranchOwnedFile(): Boolean =
+        !startsWith("app-metadata/") || "/en-US/" in this
 }

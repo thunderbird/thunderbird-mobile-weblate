@@ -83,4 +83,31 @@ val SyncManifestBuilderTests by
                 manifest.branches.getValue("release").files.getValue(filePath),
             )
         }
+
+        test("builds branch inventory for source metadata files") {
+            val sourcePath = "app-metadata/net.thunderbird.android/en-US/title.txt"
+            val translationPath = "app-metadata/net.thunderbird.android/de/title.txt"
+            val manifest =
+                SyncManifestBuilder.build(
+                    reports =
+                        listOf(
+                            FileInputReport(
+                                path = sourcePath,
+                                presentBranches = setOf(Branch("main"), Branch("release")),
+                                keyResolutions = emptyList(),
+                                conflicts = emptyList(),
+                            ),
+                            FileInputReport(
+                                path = translationPath,
+                                presentBranches = setOf(Branch("main")),
+                                keyResolutions = emptyList(),
+                                conflicts = emptyList(),
+                            ),
+                        )
+                )
+
+            assertEquals(emptyList(), manifest.branches.getValue("main").files[sourcePath])
+            assertEquals(emptyList(), manifest.branches.getValue("release").files[sourcePath])
+            assertEquals(null, manifest.branches.getValue("main").files[translationPath])
+        }
     }
