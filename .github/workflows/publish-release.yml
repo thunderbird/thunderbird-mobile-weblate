@@ -34,8 +34,8 @@ jobs:
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-provider: basic
-          cache-enabled: false
-          add-job-summary: false
+          cache-disabled: true
+          add-job-summary: never
 
       - name: Build JVM distributions
         env:
@@ -97,8 +97,8 @@ jobs:
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-provider: basic
-          cache-enabled: false
-          add-job-summary: false
+          cache-disabled: true
+          add-job-summary: never
 
       - name: Build native executables
         shell: bash
