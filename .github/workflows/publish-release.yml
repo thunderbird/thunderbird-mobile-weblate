@@ -80,10 +80,6 @@ jobs:
             target: MacosArm64
             output: macosArm64
             asset: macos-arm64
-          - os: windows-latest
-            target: MingwX64
-            output: mingwX64
-            asset: windows-x64
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
@@ -115,7 +111,6 @@ jobs:
             -PreleaseVersion="$RELEASE_TAG"
 
       - name: Package native executable
-        if: runner.os != 'Windows'
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
           NATIVE_OUTPUT: ${{ matrix.output }}
@@ -126,22 +121,6 @@ jobs:
             "release-artifacts/l10n-sync-$RELEASE_TAG-$NATIVE_ASSET.tar.gz" l10n-sync.kexe
           tar -C "l10n-weblate/build/bin/$NATIVE_OUTPUT/releaseExecutable" -czf \
             "release-artifacts/l10n-weblate-$RELEASE_TAG-$NATIVE_ASSET.tar.gz" l10n-weblate.kexe
-
-      - name: Package Windows executable
-        if: runner.os == 'Windows'
-        shell: pwsh
-        env:
-          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
-          NATIVE_OUTPUT: ${{ matrix.output }}
-          NATIVE_ASSET: ${{ matrix.asset }}
-        run: |
-          New-Item -ItemType Directory -Path release-artifacts
-          Compress-Archive `
-            -Path "l10n-sync/build/bin/$env:NATIVE_OUTPUT/releaseExecutable/l10n-sync.exe" `
-            -DestinationPath "release-artifacts/l10n-sync-$env:RELEASE_TAG-$env:NATIVE_ASSET.zip"
-          Compress-Archive `
-            -Path "l10n-weblate/build/bin/$env:NATIVE_OUTPUT/releaseExecutable/l10n-weblate.exe" `
-            -DestinationPath "release-artifacts/l10n-weblate-$env:RELEASE_TAG-$env:NATIVE_ASSET.zip"
 
       - name: Upload native artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
