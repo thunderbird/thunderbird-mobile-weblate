@@ -11,7 +11,7 @@ ktfmt = "0.27.0"
 kover = "0.9.11"
 detekt = "2.0.0-alpha.6"
 assertk = "0.28.1"
-clikt = "5.1.0"
+clikt = "5.2.1"
 
 [libraries]
 assertk = { module = "com.willowtreeapps.assertk:assertk-jvm", version.ref = "assertk" }
